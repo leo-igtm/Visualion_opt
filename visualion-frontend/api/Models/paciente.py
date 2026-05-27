@@ -1,12 +1,30 @@
-from api.datebase.dbconnections_opt import DatabaseConnection, Base
+from api.database.dbconnections_opt import DatabaseConnection
 from api.controllers.paciente_controller import router as paciente_router
 from fastapi import APIRouter, HTTPException
-from sqlalchemy.exc import SQLAlchemyError
 
-class PacienteController:
-    def __init__(self):
-        self.router = APIRouter()
-        self.router.include_router(paciente_router, prefix="/pacientes", tags=["Pacientes"])
-    def get_router(self):
-        return self.router
+
+# modelo de manejo de datos de paciente,medico,administrador
+class Paciente:
+    def __init__(self, id: int, name: str, age: int):
+        self.id = id
+        self.name = name
+        self.age = age
+
+class medico:
+    def __init__(self, id: int, name: str, specialty: str):
+        self.id = id
+        self.name = name
+        self.specialty = specialty
+
+
+
+if __name__ == "__main__":
+    # Test the database connection
+    try:
+        db = DatabaseConnection.get_instance()
+        print("Database connection successful!")
+    except Exception as e:
+        print(f"Database connection failed: {e}")   
+    
+    
     
