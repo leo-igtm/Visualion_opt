@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker,Session
@@ -7,8 +8,6 @@ from api.Models.models import Producto, RecetaMedica
 from api.Models.schemas import ProductoSchema, RecetaMedicaSchema
 
 import uvicorn
-
-models.Base.metadata.create_all(bind=DatabaseConnection.engine)
 
 
 app = FastAPI(title="Visualion API", description="API para la gestión de productos y recetas médicas", version="1.0.0")
