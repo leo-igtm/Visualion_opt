@@ -13,13 +13,13 @@ import uvicorn
 app = FastAPI(title="Visualion API", description="API para la gestión de productos y recetas médicas", version="1.0.0")
 
 @app.get ("/productos/{sku}", response_model=ProductoSchema)
-async def get_producto(sku: str, db: DatabaseConnection = DatabaseConnection.get_instance()):
+async def get_producto(sku: str):
     # Lógica para obtener un producto por su SKU
     db = DatabaseConnection.get_instance()
-    producto = db.query(Producto).filter(Producto.sku == sku).first()
+    producto = None
     if producto is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return producto
+    return producto.to_dict()
 
 @app.get("/api/health")
 async def health_check():
