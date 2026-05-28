@@ -68,6 +68,22 @@ class RecetaMedica(Base):
             "Tipolente": self.Tipolente
         }
     
+class Paciente(Base):
+    __tablename__ = "pacientes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+    apellido = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "nombre": self.nombre,
+            "apellido": self.apellido,
+            "email": self.email,
+        }
+
     
 if __name__ == "__main__":
     # Test the database connection and model creation
