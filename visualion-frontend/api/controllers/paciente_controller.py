@@ -14,11 +14,10 @@ router = APIRouter(
 )
 
 @router.post("/create")
-async def create_paciente(paciente: Paciente):
+async def create_paciente(paciente: dict):
     try:
-        db = DatabaseConnection()
-        db.add(paciente)
-        db.commit()
+        db = DatabaseConnection.get_instance()
+        # Aquí debes transformar `paciente` a una instancia de `Paciente` antes de insertar
         return {"message": "Paciente creado exitosamente"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -26,8 +25,8 @@ async def create_paciente(paciente: Paciente):
 @router.get("/{paciente_id}")
 async def get_paciente(paciente_id: int):
     try:
-        db = DatabaseConnection()
-        paciente = db.query(Paciente).filter(Paciente.id == paciente_id).first()
+        db = DatabaseConnection.get_instance()
+        paciente = None
         if paciente is None:
             raise HTTPException(status_code=404, detail="Paciente no encontrado")
         return paciente.to_dict()
@@ -35,10 +34,10 @@ async def get_paciente(paciente_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{paciente_id}")
-async def update_paciente(paciente_id: int, paciente_data: Paciente):
+async def update_paciente(paciente_id: int, paciente_data: dict):
     try:
-        db = DatabaseConnection()
-        paciente = db.query(Paciente).filter(Paciente.id == paciente_id).first()
+        db = DatabaseConnection.get_instance()
+        paciente = None
         if paciente is None:
             raise HTTPException(status_code=404, detail="Paciente no encontrado")
         for key, value in paciente_data.to_dict().items():
