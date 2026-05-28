@@ -19,7 +19,7 @@ async def get_producto(sku: str, db: DatabaseConnection = DatabaseConnection.get
     producto = db.query(Producto).filter(Producto.sku == sku).first()
     if producto is None:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    pass
+    return producto
 
 @app.get("/api/health")
 async def health_check():
