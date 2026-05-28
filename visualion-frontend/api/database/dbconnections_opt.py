@@ -33,3 +33,12 @@ class DatabaseConnection:
         # Por ejemplo, usando SQLAlchemy o cualquier otro ORM
         # return create_engine(DATABASE_URL)
         pass
+
+
+if __name__ == "__main__":
+    # Test the database connection
+    try:
+        db = DatabaseConnection.get_instance()
+        print("Database connection successful!")
+    except Exception as e:
+        print(f"Database connection failed: {e}")

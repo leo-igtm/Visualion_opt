@@ -1,33 +1,50 @@
 import os
 from fastapi import APIRouter, HTTPException
 from api.database.dbconnections_opt import DatabaseConnection
-from api.models.paciente import paciente_controller
+from api.Models.models import Paciente
+
+
+#implementar strategy pattern para manejar diferentes tipos de pacientes (por ejemplo, pacientes nuevos, pacientes recurrentes, etc.) y sus respectivas lógicas de negocio.
+
 
 router = APIRouter(
-    prefix="/pacientes",
-    tags=["Pacientes"]
+    prefix="/api/pacientes",
+    tags=["pacientes"],
+    responses={404: {"description": "Not found"}},
 )
 
+@router.post("/create")
+async def create_paciente(paciente: Paciente):
+    try:
+        db = DatabaseConnection()
+        db.add(paciente)
+        db.commit()
+        return {"message": "Paciente creado exitosamente"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/{paciente_id}")
+async def get_paciente(paciente_id: int):
+    try:
+        db = DatabaseConnection()
+        paciente = db.query(Paciente).filter(Paciente.id == paciente_id).first()
+        if paciente is None:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
+        return paciente.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.get("/")
-def listar_pacientes():
-    # Aquí puedes implementar la lógica para obtener la lista de pacientes desde la base de datos
-    # Por ejemplo, usando SQLAlchemy para consultar la tabla de pacientes
-    # return db.query(Paciente).all()
-    pacientes = paciente_controller.listar_pacientes()
-
-    return {"message": "List of patients", "pacientes": pacientes}
-
-
-@router.post("/")
-async def create_paciente(paciente: dict):
-    # Aquí puedes implementar la lógica para crear un nuevo paciente en la base de datos
-    # Por ejemplo, usando SQLAlchemy para insertar un nuevo registro en la tabla de pacientes
-    # new_paciente = Paciente(**paciente)
-    # db.add(new_paciente)
-    # db.commit()
-    paciente_controller.crear_paciente(paciente)
-    new_paciente = paciente_controller.crear_paciente(paciente)
-
-    return {"message": "Paciente created successfully"}
+@router.put("/{paciente_id}")
+async def update_paciente(paciente_id: int, paciente_data: Paciente):
+    try:
+        db = DatabaseConnection()
+        paciente = db.query(Paciente).filter(Paciente.id == paciente_id).first()
+        if paciente is None:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
+        for key, value in paciente_data.to_dict().items():
+            setattr(paciente, key, value)
+        db.commit()
+        return {"message": "Paciente actualizado exitosamente"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    

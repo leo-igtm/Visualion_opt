@@ -1,21 +1,26 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker,Session
+from api.database.dbconnections_opt import DatabaseConnection
+from api.controllers import paciente_controller
+from api.Models.models import Producto, RecetaMedica
+from api.Models.schemas import ProductoSchema, RecetaMedicaSchema
+
 import uvicorn
-from api.controllers.paciente_controller import router 
-from api.models.paciente import APIRouter
+
+models.Base.metadata.create_all(bind=DatabaseConnection.engine)
 
 
-app = FastAPI(
-    title="Visualion API",
-    docs="/api/docs",
-    openapi_url="/api/openapi.json",
+app = FastAPI(title="Visualion API", description="API para la gestión de productos y recetas médicas", version="1.0.0")
 
-) 
-
-app.include_router(router, prefix="/api/pacientes", tags=["Pacientes"])
-
-@app.get("/api/controller")
-async def get_controller():
-    return {"message": "This is the PacienteController endpoint"}
+@app.get ("/productos/{sku}", response_model=ProductoSchema)
+async def get_producto(sku: str, db: DatabaseConnection = DatabaseConnection.get_instance()):
+    # Lógica para obtener un producto por su SKU
+    db = DatabaseConnection.get_instance()
+    producto = db.query(Producto).filter(Producto.sku == sku).first()
+    if producto is None:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    pass
 
 @app.get("/api/health")
 async def health_check():
