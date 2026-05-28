@@ -1,12 +1,12 @@
-from sqlalchemy import Column, Integer, String, Float,DateTime
-from database.dbconnections_opt import DatabaseConnection
+from sqlalchemy import Column, Integer, String, Float, DateTime
+from api.database.dbconnections_opt import DatabaseConnection, Base
 
 
 # Modelos de SQLAlchemy para las tablas de la base de datos
 
 #Productos Tabla de productos disponibles en la óptica, con su SKU, tipo de producto, precio y stock disponible,conectado con vendedor, taller, tecnico y receta médica  
 
-class Producto(DatabaseConnection.Base):
+class Producto(Base):
     __tablename__ = "productos"
 
     sku = Column(String, primary_key=True, index=True)
@@ -24,7 +24,7 @@ class Producto(DatabaseConnection.Base):
 
 #Receta médica Tabla intermedia entre paciente y medico, con los datos de la receta
 
-class RecetaMedica(DatabaseConnection.Base):
+class RecetaMedica(Base):
     __tablename__ = "recetas_medicas"
 
     uuid = Column(String, primary_key=True, index=True)

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, field_validator, ValidationError
-from datetime import datetime,str,float,int
-from models import Producto, RecetaMedica
+from datetime import datetime
+from api.Models.models import Producto, RecetaMedica
 
 class ProductoSchema(BaseModel):
     sku: str
