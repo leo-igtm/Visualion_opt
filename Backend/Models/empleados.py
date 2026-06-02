@@ -1,9 +1,7 @@
-#crear data base de empleados en postgres y agregar funciones para insertar, eliminar, actualizar y consultar empleados
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
-from database.dbconnections_opt import declarative_base
 
-Base = declarative_base()
+from Backend.database.dbconnections_opt import Base
 
 class Empleado(Base):
     __tablename__ = "empleados"
@@ -27,6 +25,8 @@ class Empleado(Base):
 class Medico(Empleado):
     __tablename__ = "medicos"
 
+    id: Mapped[int] = mapped_column(ForeignKey("empleados.id"), primary_key=True)
+
     matricula:Mapped[str | None] = mapped_column(String(50))
     especialidad:Mapped[str | None] = mapped_column(String(100))
 
@@ -37,9 +37,22 @@ class Medico(Empleado):
 class Tecnico(Empleado):
     __tablename__ = "tecnicos"
 
+    id: Mapped[int] = mapped_column(ForeignKey("empleados.id"), primary_key=True)
+
     area_experiencia:Mapped[str | None] = mapped_column(String(100))
 
     __mapper_args__ = {
         "polymorphic_identity": "tecnico",
     }
 
+class Vendedor(Empleado):
+    __tablename__ = "vendedores"
+
+    id: Mapped[int] = mapped_column(ForeignKey("empleados.id"), primary_key=True)
+
+    legajo: Mapped[str | None] = mapped_column(String(50))
+    comisiones: Mapped[float | None] = mapped_column(Float) 
+
+    __mapper_args__ = {
+        "polymorphic_identity": "vendedor",
+    }

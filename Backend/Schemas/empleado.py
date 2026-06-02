@@ -1,6 +1,6 @@
 import os 
-from typing import BaseModel 
-import pydantic 
+from typing import Optional
+from pydantic import BaseModel
 from typing import Optional
 
 class EmpleadoBase(BaseModel):
