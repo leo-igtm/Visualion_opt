@@ -1,41 +1,52 @@
-# app/database.py
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import DeclarativeBase , Mapped , mapped_column
+import os
+from dotenv import load_dotenv
 from datetime import datetime
+
 from sqlalchemy import DateTime
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
-# URL de conexión (reemplaza con tus credenciales)
-DATABASE_URL = "postgresql+asyncpg://postgres:root@localhost:5432/visualion_opt"
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# SINGLETON: Creamos el motor asíncrono una sola vez para toda la app
-engine = create_async_engine(DATABASE_URL, echo=True)
 
-# Fábrica para generar sesiones asíncronas en cada petición
-AsyncSessionLocal = async_sessionmaker(
-    bind=engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False
-)
+class _DatabaseSingleton:
+    _instance: "_DatabaseSingleton | None" = None
 
-# Clase base de la que heredarán todos nuestros modelos ORM
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.engine = create_async_engine(DATABASE_URL, echo=True)
+            cls._instance.session_factory = async_sessionmaker(
+                bind=cls._instance.engine,
+                class_=AsyncSession,
+                expire_on_commit=False,
+            )
+        return cls._instance
+
+
+db = _DatabaseSingleton()
+AsyncSessionLocal = db.session_factory
+
+
 class Base(DeclarativeBase):
-    
+    __abstract__ = True
+
     fecha_creacion: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now()
+        DateTime(timezone=True),
+        server_default=func.now(),
     )
 
-    # Fecha en la que se modifica el registro por última vez
-    fecha_actualizacion: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now(), 
-        onupdate=func.now()
-    )
     
-    pass
 
-# Dependencia para usar en las rutas de FastAPI (Inyección de Dependencias)
+    fecha_actualizacion: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session

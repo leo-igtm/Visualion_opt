@@ -1,14 +1,13 @@
-import os
 from fastapi import FastAPI
 from Backend.controllers.empleado import router as empleado_router
-
+from Backend.controllers.paciente import router as paciente_router
 app = FastAPI(  
     title="Visualion API backend ",
 )
 
 app.include_router(empleado_router)
+app.include_router(paciente_router)
 
-database_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:root@localhost:5432/visualion_opt")
 
 @app.get("/")
 async def root():

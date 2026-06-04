@@ -1,33 +1,20 @@
-import os 
 from typing import Optional
-from pydantic import BaseModel
-from typing import Optional
+from Backend.Schemas.persona_base import PersonaBase
 
-class EmpleadoBase(BaseModel):
-    id: int
-    nombre: str
-    apellido: str
-    dni: str
-    usuario: str
-    rol: str
-
-    class Config:
-        from_attributes = True
-
-class MedicoOut(EmpleadoBase):
-    matricula: Optional[str]
-    especialidad: Optional[str]
-
-class TecnicoOut(EmpleadoBase):
-    matricula_optico: Optional[str]
-
-class EmpleadoCreate(BaseModel):
-    nombre: str
-    apellido: str
-    dni: str
+class EmpleadoCreate(PersonaBase):
+    legajo: str
     usuario: str
     contraseña: str
-    rol: str
+    rol: str 
+    
+    # Campos opcionales dependiendo del rol
     matricula: Optional[str] = None
     especialidad: Optional[str] = None
     matricula_optico: Optional[str] = None
+    comisiones: Optional[float] = None
+
+class EmpleadoOut(PersonaBase):
+    id: int
+    legajo: str
+    usuario: str
+    rol: str
