@@ -17,7 +17,7 @@ En el estado actual, la interfaz todavía conserva la plantilla inicial de Next.
 ## Estructura principal
 
 - `app/`: frontend Next.js.
-- `api/`: backend FastAPI, modelos, esquemas, controladores y conexión a base de datos.
+- `Backend/`: backend FastAPI, modelos, esquemas, controladores y conexión a base de datos.
 - `alembic/` y `alembic.ini`: migraciones de base de datos.
 - `public/`: recursos estáticos del frontend.
 
@@ -57,10 +57,10 @@ Instala las dependencias de Python que figuran en `requirements.txt` y ejecuta l
 
 ```bash
 python -m pip install -r requirements.txt
-python -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn Backend.index:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Si prefieres iniciar el archivo directamente, `api/index.py` también incluye un arranque con Uvicorn.
+Si prefieres iniciar el archivo directamente, `Backend/index.py` también incluye un arranque con Uvicorn.
 
 ### 3. Base de datos
 
@@ -68,8 +68,8 @@ La conexión actual apunta a PostgreSQL en `localhost:5432` con la base `visuali
 
 Antes de usar la API, verifica estas credenciales en:
 
-- `api/index.py`
-- `api/database/dbconnections_opt.py`
+- `Backend/index.py`
+- `Backend/database/dbconnections_opt.py`
 - `alembic.ini`
 
 Si cambias usuario, contraseña, host o nombre de base, actualiza esos tres lugares para que la API y las migraciones apunten al mismo destino.
@@ -118,13 +118,14 @@ PostgreSQL debe estar en un servicio independiente. Si usas Laragon como apoyo l
 ## Estado actual del proyecto
 
 - Frontend: base funcional, pendiente de personalización de pantallas y consumo real de API.
-- Backend: estructura inicial lista para crecer con endpoints de negocio.
-- Base de datos: configurada para PostgreSQL y migraciones.
+- Backend: controladores para `empleado` y `paciente` implementados en `Backend/controllers/`.
+- Base de datos: carga inicial funcional; conexión en `Backend/database/dbconnections_opt.py` y migraciones en `alembic/`.
+- Reorganización: carpetas ajustadas para reflejar la estructura actual (`Backend/`, `alembic/`, `visualion-frontend/`).
 - Despliegue: orientado a entorno local primero y luego a hosting externo.
 
 ## Próximos pasos sugeridos
 
-- Implementar endpoints CRUD para empleados y pacientes.
-- Conectar el frontend con la API.
-- Normalizar la configuración de variables de entorno.
-- Completar las migraciones iniciales de Alembic.
+- Verificar y documentar los endpoints expuestos: `/empleados`, `/pacientes` (GET/POST/PUT/DELETE según implemente cada controlador).
+- Conectar las vistas del frontend con los endpoints del backend.
+- Normalizar la configuración de variables de entorno y `DATABASE_URL`.
+- Generar y aplicar migraciones adicionales con Alembic cuando se modifiquen modelos.
