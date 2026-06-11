@@ -12,6 +12,7 @@ router = APIRouter(
     tags=["Gestion de empleados"]
 )
 
+#Crear empleado
 @router.post("/", response_model=EmpleadoOut)
 async def crear_empleado(empleado_in: EmpleadoCreate, db: AsyncSession = Depends(get_db)):
     query_dni = select(Persona).where(Persona.dni == empleado_in.dni)
@@ -48,3 +49,51 @@ async def crear_empleado(empleado_in: EmpleadoCreate, db: AsyncSession = Depends
     await db.commit()
     await db.refresh(nuevo_empleado)
     return nuevo_empleado
+
+
+@router.get("/{empleado_rol}", response_model=EmpleadoOut)
+async def obtener_empleado(empleado_rol: str, db: AsyncSession = Depends(get_db)):
+    query = select(Empleado).where(Empleado.rol == empleado_rol)
+    resultado = await db.execute(query)
+    empleado = resultado.scalars().first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado.")
+    return empleado
+
+
+@router.put("/{empleado_id}", response_model=EmpleadoOut)
+async def actualizar_empleado(empleado_id: int, empleado_in: EmpleadoCreate, db: AsyncSession = Depends(get_db)):
+    query = select(Empleado).where(Empleado.id == empleado_id)
+    resultado = await db.execute(query)
+    empleado = resultado.scalars().first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado.")
+    
+    for key, value in empleado_in.dict(exclude_unset=True).items():
+        setattr(empleado, key, value)
+
+    await db.commit()
+    await db.refresh(empleado)
+    return empleado
+
+@router.delete("/{empleado_id}")
+async def eliminar_empleado(empleado_id: int, db: AsyncSession = Depends(get_db)):
+    query = select(Empleado).where(Empleado.id == empleado_id)
+    resultado = await db.execute(query)
+    empleado = resultado.scalars().first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado.")
+    
+    await db.delete(empleado)
+    await db.commit()
+    return {"detail": "Empleado eliminado exitosamente."}
+
+@router.get("/", response_model=list[EmpleadoOut])
+async def listar_empleados(db: AsyncSession = Depends(get_db)):
+    query = select(Empleado)
+    resultado = await db.execute(query)
+    empleados = resultado.scalars().all()
+    return empleados
+
+
+    
