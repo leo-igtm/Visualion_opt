@@ -1,11 +1,11 @@
 from sqlalchemy import Float, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
 
-# =====================================================================
-# NIVEL 1: LA CLASE MADRE (La tabla "personas")
-# =====================================================================
+#Documentacion de estas clases 
+
 class Persona(Base):
+
     __tablename__ = "personas"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -36,13 +36,9 @@ class Paciente(Persona):
     __mapper_args__ = {
         "polymorphic_identity": "paciente"
     }
-
-
-
-
-# =====================================================================
-# NIVEL 2: LAS ESPECIALIZACIONES DIRECTAS
-# =====================================================================
+    turnos = relationship("Turno", back_populates="paciente")
+    ventas = relationship("Venta", back_populates="paciente")
+    recetas = relationship("RecetaMedica", back_populates="paciente")
 
 class Empleado(Persona):
     __tablename__ = "empleados"
@@ -60,11 +56,6 @@ class Empleado(Persona):
         "polymorphic_identity": "empleado" 
     }
 
-
-# =====================================================================
-# NIVEL 3: LOS SUBTIPOS DE EMPLEADO (Nietos de Persona)
-# =====================================================================
-
 class Medico(Empleado):
     __tablename__ = "medicos"
     
@@ -77,6 +68,9 @@ class Medico(Empleado):
     __mapper_args__ = {
         "polymorphic_identity": "medico"
     }
+
+    turnos = relationship("Turno", back_populates="medico")
+    recetas = relationship("RecetaMedica", back_populates="medico")
 
 
 class Tecnico(Empleado):
@@ -101,3 +95,5 @@ class Vendedor(Empleado):
     __mapper_args__ = {
         "polymorphic_identity": "vendedor"
     }
+    ventas = relationship("Venta", back_populates="vendedor")
+

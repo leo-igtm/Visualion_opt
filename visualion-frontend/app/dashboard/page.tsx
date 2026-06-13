@@ -1,4 +1,6 @@
 // app/dashboard/page.tsx
+/*Elaborar estilo oscuro*/ 
+
 
 export default function DashboardHome() {
   return (

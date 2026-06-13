@@ -15,6 +15,9 @@ sys.path.append(BASE_DIR)
 
 from Backend.database.dbconnections_opt import Base
 from Backend.Models.Usuarios import Persona
+from Backend.Models.clinica import Turno, RecetaMedica
+from Backend.Models.optica import Producto, Venta, DetalleVenta
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
