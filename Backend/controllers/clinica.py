@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-# Ajusta estos imports a tu proyecto
 from Backend.database.dbconnections_opt import get_db
 from Backend.Models import clinica as models
 from Backend.Models.Usuarios import Paciente, Medico
