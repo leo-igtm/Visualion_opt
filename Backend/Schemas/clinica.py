@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
+
 class TurnoBase(BaseModel):
     paciente_id: int
     medico_id: int 
@@ -26,7 +27,6 @@ class TurnoResponse(TurnoBase):
 ##Receta Medica
 
 class RecetaMedicaBase(BaseModel):
-    uuid: int
     turno_id: Optional[int] = None
     paciente_id: int
     medico_id: Optional[int] = None

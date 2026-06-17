@@ -28,17 +28,72 @@ export async function fetchObtenerPaciente() {
         throw error;
     }
 }
-
-
-export async function fetchlistarPacientes() {
+export async function crearPaciente(paciente: any) {
     try {
-        const response = await fetch(`${BaseURL}/pacientes`);  
+        const response = await fetch(`${BaseURL}/pacientes/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paciente),
+        });
         if (!response.ok) {
-            throw new Error('Error al listar los pacientes');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Error al crear el paciente');
         }
         return await response.json();
     } catch (error) {
-        console.error('Error al listar los pacientes:', error);
+        console.error('Error al crear el paciente:', error);
+        throw error;
+    }
+}
+
+export async function actualizarPaciente(id: number, paciente: any) {
+    try {
+        const response = await fetch(`${BaseURL}/pacientes/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paciente),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Error al actualizar el paciente');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error al actualizar el paciente:', error);
+        throw error;
+    }
+}
+
+export async function eliminarPaciente(dni: string) {
+    try {
+        const response = await fetch(`${BaseURL}/pacientes/${dni}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Error al eliminar el paciente');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error al eliminar el paciente:', error);
+        throw error;
+    }
+}
+
+export async function buscarPacientePorDni(dni: string) {
+    try {
+        const response = await fetch(`${BaseURL}/pacientes/dni/${dni}`);
+        if (!response.ok) {
+            if (response.status === 404) return null;
+            throw new Error('Error al buscar el paciente');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error al buscar el paciente:', error);
         throw error;
     }
 }

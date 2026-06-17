@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from datetime import datetime
 from Backend.database.dbconnections_opt import get_db
 from Backend.Models import clinica as models
 from Backend.Models.Usuarios import Paciente, Medico
@@ -78,6 +79,7 @@ async def crear_receta(receta_in: schemas.RecetaMedicaCreate, db: AsyncSession =
         turno_id=receta_in.turno_id,
         paciente_id=receta_in.paciente_id,
         medico_id=receta_in.medico_id,
+        fecha_emision=datetime.now(),
         fecha_vencimiento=receta_in.fecha_vencimiento,
         od_esfera=receta_in.od_esfera,
         od_cilindro=receta_in.od_cilindro,
@@ -95,3 +97,18 @@ async def crear_receta(receta_in: schemas.RecetaMedicaCreate, db: AsyncSession =
     await db.refresh(nueva_receta)
     return nueva_receta
 
+
+@router.get("/turnos/", response_model=list[schemas.TurnoResponse])
+async def listar_turnos(db: AsyncSession = Depends(get_db)):
+    query = select(models.Turno)
+    resultado = await db.execute(query)
+    turnos = resultado.scalars().all()
+    return turnos
+
+
+@router.get("/recetas/", response_model=list[schemas.RecetaMedicaResponse])
+async def listar_recetas(db: AsyncSession = Depends(get_db)):
+    query = select(models.RecetaMedica)
+    resultado = await db.execute(query)
+    recetas = resultado.scalars().all()
+    return recetas

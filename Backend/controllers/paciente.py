@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from Backend.database.dbconnections_opt import get_db
-from Backend.Schemas.paciente import PacienteCreate, PacienteOut
+from Backend.Schemas.paciente import PacienteCreate, PacienteOut, PacienteUpdate
 from Backend.Models.Usuarios import Paciente, Persona
 
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
@@ -54,21 +54,28 @@ async def obtener_paciente_por_dni(paciente_dni: str, db: AsyncSession = Depends
 
 
 @router.put("/{paciente_id}", response_model=PacienteOut)
-async def actualizar_paciente(paciente_id: int, paciente_in: PacienteCreate, db: AsyncSession = Depends(get_db)):
+async def actualizar_paciente(paciente_id: int, paciente_in: PacienteUpdate, db: AsyncSession = Depends(get_db)):
     query = select(Paciente).where(Paciente.id == paciente_id)
     resultado = await db.execute(query)
     paciente = resultado.scalars().first()
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente no encontrado.")
 
-    # Actualizar campos
-    paciente.dni = paciente_in.dni
-    paciente.nombre = paciente_in.nombre
-    paciente.apellido = paciente_in.apellido
-    paciente.telefono = paciente_in.telefono
-    paciente.email = paciente_in.email
-    paciente.obra_social = paciente_in.obra_social
-    paciente.historial_medico = paciente_in.historial_medico
+    # Actualizar campos solo si se enviaron
+    if paciente_in.dni is not None:
+        paciente.dni = paciente_in.dni
+    if paciente_in.nombre is not None:
+        paciente.nombre = paciente_in.nombre
+    if paciente_in.apellido is not None:
+        paciente.apellido = paciente_in.apellido
+    if paciente_in.telefono is not None:
+        paciente.telefono = paciente_in.telefono
+    if paciente_in.email is not None:
+        paciente.email = paciente_in.email
+    if paciente_in.obra_social is not None:
+        paciente.obra_social = paciente_in.obra_social
+    if paciente_in.historial_medico is not None:
+        paciente.historial_medico = paciente_in.historial_medico
 
     db.add(paciente)
     await db.commit()
@@ -89,7 +96,7 @@ async def eliminar_paciente(paciente_dni: str, db: AsyncSession = Depends(get_db
     return {"detail": "Paciente eliminado exitosamente."}
 
 @router.get("/", response_model=list[PacienteOut]) 
-async def listar_paciente_por_dni(db: AsyncSession = Depends(get_db)):
+async def listar_pacientes(db: AsyncSession = Depends(get_db)):
     query = select(Paciente)
     resultado = await db.execute(query)
     pacientes = resultado.scalars().all()

@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException,Depends
 from sqlalchemy.ext.asyncio import AsyncSession    
 from sqlalchemy import select
-from typing import Union
-from Backend.Schemas.empleado import EmpleadoOut , EmpleadoCreate
-from sqlalchemy.orm import Session
+from Backend.Schemas.empleado import EmpleadoOut , EmpleadoCreate, EmpleadoUpdate
 from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor , Persona 
 from Backend.database.dbconnections_opt import get_db
 
@@ -29,19 +27,48 @@ async def crear_empleado(empleado_in: EmpleadoCreate, db: AsyncSession = Depends
     if resultado_emp.scalars().first():
         raise HTTPException(status_code=400, detail="Usuario o legajo en uso.")
     rol = empleado_in.rol.lower()
-    base_data = {
-        "dni": empleado_in.dni, "nombre": empleado_in.nombre, "apellido": empleado_in.apellido,
-        "telefono": empleado_in.telefono, "email": empleado_in.email, "legajo": empleado_in.legajo,
-        "usuario": empleado_in.usuario, "contraseña": empleado_in.contraseña, "rol": rol
-    }
 
     match rol:
         case "medico":
-            nuevo_empleado = Medico(**base_data, especialidad=empleado_in.especialidad, matricula=empleado_in.matricula)
+            nuevo_empleado = Medico(
+                dni=empleado_in.dni,
+                nombre=empleado_in.nombre,
+                apellido=empleado_in.apellido,
+                telefono=empleado_in.telefono,
+                email=empleado_in.email,
+                legajo=empleado_in.legajo,
+                usuario=empleado_in.usuario,
+                contraseña=empleado_in.contraseña,
+                rol=rol,
+                especialidad=empleado_in.especialidad,
+                matricula=empleado_in.matricula
+            )
         case "tecnico":
-            nuevo_empleado = Tecnico(**base_data, matricula_optico=empleado_in.matricula_optico)
+            nuevo_empleado = Tecnico(
+                dni=empleado_in.dni,
+                nombre=empleado_in.nombre,
+                apellido=empleado_in.apellido,
+                telefono=empleado_in.telefono,
+                email=empleado_in.email,
+                legajo=empleado_in.legajo,
+                usuario=empleado_in.usuario,
+                contraseña=empleado_in.contraseña,
+                rol=rol,
+                matricula_optico=empleado_in.matricula_optico
+            )
         case "vendedor":
-            nuevo_empleado = Vendedor(**base_data, comisiones=empleado_in.comisiones or 0.0)
+            nuevo_empleado = Vendedor(
+                dni=empleado_in.dni,
+                nombre=empleado_in.nombre,
+                apellido=empleado_in.apellido,
+                telefono=empleado_in.telefono,
+                email=empleado_in.email,
+                legajo=empleado_in.legajo,
+                usuario=empleado_in.usuario,
+                contraseña=empleado_in.contraseña,
+                rol=rol,
+                comisiones=empleado_in.comisiones or 0.0
+            )
         case _:
             raise HTTPException(status_code=400, detail="Rol no válido.")
 
@@ -51,25 +78,31 @@ async def crear_empleado(empleado_in: EmpleadoCreate, db: AsyncSession = Depends
     return nuevo_empleado
 
 
-@router.get("/{empleado_rol}", response_model=EmpleadoOut)
-async def obtener_empleado(empleado_rol: str, db: AsyncSession = Depends(get_db)):
+@router.get("/rol/{empleado_rol}", response_model=list[EmpleadoOut])
+async def obtener_empleados_por_rol(empleado_rol: str, db: AsyncSession = Depends(get_db)):
     query = select(Empleado).where(Empleado.rol == empleado_rol)
+    resultado = await db.execute(query)
+    empleados = resultado.scalars().all()
+    return empleados
+
+@router.get("/{empleado_id}", response_model=EmpleadoOut)
+async def obtener_empleado_por_id(empleado_id: int, db: AsyncSession = Depends(get_db)):
+    query = select(Empleado).where(Empleado.id == empleado_id)
     resultado = await db.execute(query)
     empleado = resultado.scalars().first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado.")
     return empleado
 
-
 @router.put("/{empleado_id}", response_model=EmpleadoOut)
-async def actualizar_empleado(empleado_id: int, empleado_in: EmpleadoCreate, db: AsyncSession = Depends(get_db)):
+async def actualizar_empleado(empleado_id: int, empleado_in: EmpleadoUpdate, db: AsyncSession = Depends(get_db)):
     query = select(Empleado).where(Empleado.id == empleado_id)
     resultado = await db.execute(query)
     empleado = resultado.scalars().first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado.")
     
-    for key, value in empleado_in.dict(exclude_unset=True).items():
+    for key, value in empleado_in.model_dump(exclude_unset=True).items():
         setattr(empleado, key, value)
 
     await db.commit()

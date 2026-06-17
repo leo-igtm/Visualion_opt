@@ -1,23 +1,31 @@
 import os
+from typing import AsyncGenerator
 from dotenv import load_dotenv
 from datetime import datetime
-
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy import DateTime
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+database_url_raw = os.getenv("DATABASE_URL")
+
+if database_url_raw is None:
+    raise RuntimeError("DATABASE_URL no está definido en el entorno.")
+
+database_url: str = database_url_raw
 
 
 class _DatabaseSingleton:
     _instance: "_DatabaseSingleton | None" = None
+    engine: AsyncEngine
+    session_factory: async_sessionmaker[AsyncSession]
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.engine = create_async_engine(DATABASE_URL, echo=True)
+            cls._instance.engine = create_async_engine(database_url, echo=True)
             cls._instance.session_factory = async_sessionmaker(
                 bind=cls._instance.engine,
                 class_=AsyncSession,
@@ -35,6 +43,7 @@ class Base(DeclarativeBase):
 
     fecha_creacion: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=func.now(),
         server_default=func.now(),
     )
 
@@ -42,11 +51,12 @@ class Base(DeclarativeBase):
 
     fecha_actualizacion: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=func.now(),
         server_default=func.now(),
         onupdate=func.now(),
     )
 
 
-async def get_db():
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session

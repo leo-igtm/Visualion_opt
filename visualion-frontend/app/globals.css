@@ -14,13 +14,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f1117;
+    --foreground: #f8fafc;
   }
 }
 
+/* Force dark theme for the application regardless of system preference */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #0f1117;
+  color: #f8fafc;
   font-family: Arial, Helvetica, sans-serif;
 }

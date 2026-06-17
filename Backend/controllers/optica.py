@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from datetime import datetime
-
-# Ajusta estos imports a tu proyecto
 from Backend.database.dbconnections_opt import get_db 
 from Backend.Models import optica as models
+from Backend.Models.Usuarios import Paciente, Vendedor
+from Backend.Models.clinica import RecetaMedica
 from Backend.Schemas import optica as schemas
 
 router = APIRouter(prefix="/optica", tags=["Óptica - Ventas y Productos"])
@@ -13,11 +12,25 @@ router = APIRouter(prefix="/optica", tags=["Óptica - Ventas y Productos"])
 
 @router.post("/ventas/", response_model=schemas.VentaResponse, status_code=status.HTTP_201_CREATED)
 async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(get_db)):
+    query_paciente = select(Paciente).where(Paciente.id == venta_in.paciente_id)
+    resultado_paciente = await db.execute(query_paciente)
+    if not resultado_paciente.scalars().first():
+        raise HTTPException(status_code=404, detail=f"Paciente con ID {venta_in.paciente_id} no encontrado")
+
+    query_vendedor = select(Vendedor).where(Vendedor.id == venta_in.vendedor_id)
+    resultado_vendedor = await db.execute(query_vendedor)
+    if not resultado_vendedor.scalars().first():
+        raise HTTPException(status_code=404, detail=f"Vendedor con ID {venta_in.vendedor_id} no encontrado")
+
+    if venta_in.receta_id is not None:
+        query_receta = select(RecetaMedica).where(RecetaMedica.uuid == venta_in.receta_id)
+        resultado_receta = await db.execute(query_receta)
+        if not resultado_receta.scalars().first():
+            raise HTTPException(status_code=404, detail=f"Receta con ID {venta_in.receta_id} no encontrada")
     
     # 1. Creamos la cabecera de la venta
     nueva_venta = models.Venta(
         numeroComprobante=venta_in.numeroComprobante,
-        fecha_creacion=datetime.now(),
         estado_pago=venta_in.estado_pago,
         total=0.0,
         paciente_id=venta_in.paciente_id,
