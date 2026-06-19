@@ -1,211 +1,92 @@
-const BaseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// services/api.ts - Configuración base
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-
-export async function fetchObtenerEmpleados() {
-    try {
-        const response = await fetch(`${BaseURL}/empleados`);
-        if (!response.ok) {
-            throw new Error('Error al obtener los empleados');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error al obtener los empleados:', error);
-        throw error;
-    }
-
+export class APIError extends Error {
+  constructor(
+    public status: number,
+    public detail: string
+  ) {
+    super(detail);
+    this.name = "APIError";
+  }
 }
 
+async function fetchAPI<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> {
+  const url = `${API_BASE}${endpoint}`;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-export async function fetchObtenerPaciente() {
-    try {
-        const response = await fetch(`${BaseURL}/pacientes`);
-        if (!response.ok) {
-            throw new Error('Error al obtener los pacientes');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error al obtener los pacientes:', error);
-        throw error;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options?.headers,
+  };
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new APIError(response.status, errorData.detail || "Error en la solicitud");
     }
-}
-export async function crearPaciente(paciente: any) {
-    try {
-        const response = await fetch(`${BaseURL}/pacientes/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(paciente),
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Error al crear el paciente');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error al crear el paciente:', error);
-        throw error;
-    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof APIError) throw error;
+    throw new APIError(500, error instanceof Error ? error.message : "Error desconocido");
+  }
 }
 
-export async function actualizarPaciente(id: number, paciente: any) {
-    try {
-        const response = await fetch(`${BaseURL}/pacientes/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(paciente),
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Error al actualizar el paciente');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error al actualizar el paciente:', error);
-        throw error;
-    }
+export async function GET<T>(endpoint: string): Promise<T> {
+  return fetchAPI<T>(endpoint, { method: "GET" });
 }
 
-export async function eliminarPaciente(dni: string) {
-    try {
-        const response = await fetch(`${BaseURL}/pacientes/${dni}`, {
-            method: 'DELETE',
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Error al eliminar el paciente');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error al eliminar el paciente:', error);
-        throw error;
-    }
+export async function POST<T>(endpoint: string, data: any): Promise<T> {
+  return fetchAPI<T>(endpoint, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
-export async function buscarPacientePorDni(dni: string) {
-    try {
-        const response = await fetch(`${BaseURL}/pacientes/dni/${dni}`);
-        if (!response.ok) {
-            if (response.status === 404) return null;
-            throw new Error('Error al buscar el paciente');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error al buscar el paciente:', error);
-        throw error;
-    }
+export async function PUT<T>(endpoint: string, data: any): Promise<T> {
+  return fetchAPI<T>(endpoint, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
-export async function fetchlistarEmpleados() {
-    try {
-        const response = await fetch(`${BaseURL}/empleados`);
-        if (!response.ok) {
-            throw new Error('Error al listar los empleados');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error al listar los empleados:', error);
-        throw error;
-    }
+export async function DELETE<T>(endpoint: string): Promise<T> {
+  return fetchAPI<T>(endpoint, { method: "DELETE" });
 }
 
-// Funciones de autenticación y gestión de usuarios
+export const API = { GET, POST, PUT, DELETE };
+
+// Auth functions
 export async function login(usuario: string, contraseña: string) {
-    try {
-        const response = await fetch(`${BaseURL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ usuario, contraseña }),
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Credenciales inválidas');
-        }
-        const data = await response.json();
-        localStorage.setItem('token', data.access_token);
-        return data;
-    } catch (error) {
-        console.error('Error en login:', error);
-        throw error;
-    }
+  return POST("/auth/login", { usuario, contraseña });
 }
 
 export async function register(userData: any) {
-    try {
-        const response = await fetch(`${BaseURL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData),
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Error al registrar');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error en registro:', error);
-        throw error;
-    }
+  return POST("/auth/register", userData);
 }
 
 export async function fetchUsuarios() {
-    try {
-        const response = await fetch(`${BaseURL}/auth/usuarios`);
-        if (!response.ok) throw new Error('Error al listar usuarios');
-        return await response.json();
-    } catch (error) {
-        console.error('Error:', error);
-        throw error;
-    }
+  return GET("/auth/usuarios");
 }
 
 export async function obtenerUsuario(id: number) {
-    try {
-        const response = await fetch(`${BaseURL}/auth/usuarios/${id}`);
-        if (!response.ok) throw new Error('Error al obtener usuario');
-        return await response.json();
-    } catch (error) {
-        console.error('Error:', error);
-        throw error;
-    }
+  return GET(`/auth/usuarios/${id}`);
 }
 
 export async function actualizarUsuario(id: number, userData: any) {
-    try {
-        const response = await fetch(`${BaseURL}/auth/usuarios/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData),
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Error al actualizar usuario');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error:', error);
-        throw error;
-    }
+  return PUT(`/auth/usuarios/${id}`, userData);
 }
 
 export async function eliminarUsuario(id: number) {
-    try {
-        const response = await fetch(`${BaseURL}/auth/usuarios/${id}`, {
-            method: 'DELETE',
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.detail || 'Error al eliminar usuario');
-        }
-        return { success: true };
-    } catch (error) {
-        console.error('Error:', error);
-        throw error;
-    }
-}
-
-export function logout() {
-    localStorage.removeItem('token');
+  return DELETE(`/auth/usuarios/${id}`);
 }

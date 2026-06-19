@@ -17,6 +17,7 @@ from Backend.database.dbconnections_opt import Base
 from Backend.Models.Usuarios import Persona
 from Backend.Models.clinica import Turno, RecetaMedica
 from Backend.Models.optica import Producto, Venta, DetalleVenta
+from Backend.Models.taller import OrdenTrabajo, EtapaTrabajo, HistoricoEstados
 
 
 # this is the Alembic Config object, which provides

@@ -1,10 +1,28 @@
-from passlib.context import CryptContext
+from typing import Protocol
+
+from passlib.context import CryptContext  # type: ignore[import-not-found]
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor
 from Backend.sanitizers.data_sanitizer import DataSanitizer
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+class RegisterUserData(Protocol):
+    dni: str
+    nombre: str
+    apellido: str
+    telefono: str
+    email: str
+    usuario: str
+    contraseña: str
+    rol: str
+    legajo: int | str
+    matricula: str | None
+    especialidad: str | None
+    matricula_optico: str | None
+    comisiones: float | None
 
 
 class AuthService:
@@ -17,7 +35,7 @@ class AuthService:
         return pwd_context.verify(plain, hashed)
 
     @staticmethod
-    async def register_user(db: AsyncSession, user_data) -> Empleado:
+    async def register_user(db: AsyncSession, user_data: RegisterUserData) -> Empleado:
         """Registra nuevo usuario reutilizando estructura existente"""
         # Sanitizar datos
         user_data.nombre = DataSanitizer.sanitize_string(user_data.nombre)

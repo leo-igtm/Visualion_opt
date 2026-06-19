@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from Backend.database.dbconnections_opt import get_db 
+from Backend.database.dbconnections_opt import get_db
 from Backend.Models import optica as models
+from Backend.Models import taller as models_taller
 from Backend.Models.Usuarios import Paciente, Vendedor
 from Backend.Models.clinica import RecetaMedica
 from Backend.Schemas import optica as schemas
@@ -38,9 +39,16 @@ async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(
         receta_id=venta_in.receta_id
     )
     db.add(nueva_venta)
-    
+
     # MUY IMPORTANTE: await en el flush para que la BD nos devuelva el 'id' de la venta
-    await db.flush()  
+    await db.flush()
+
+    # AUTO-CREAR ORDEN DE TRABAJO
+    nueva_orden = models_taller.OrdenTrabajo(
+        venta_id=nueva_venta.id,
+        estado=models_taller.EstadoOrden.RECIBIDA
+    )
+    db.add(nueva_orden)
 
     total_venta = 0.0
 

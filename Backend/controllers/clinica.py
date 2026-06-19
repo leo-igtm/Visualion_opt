@@ -6,7 +6,6 @@ from Backend.database.dbconnections_opt import get_db
 from Backend.Models import clinica as models
 from Backend.Models.Usuarios import Paciente, Medico
 from Backend.Schemas import clinica as schemas
-from Backend.services.receta_service import RecetaService
 from pydantic import ValidationError
 
 router = APIRouter(prefix="/clinica", tags=["Clínica - Turnos y Recetas"])

@@ -17,17 +17,28 @@ router = APIRouter(prefix="/auth", tags=["Autenticación"])
 async def register(user_data: EmpleadoRegister, db: AsyncSession = Depends(get_db)):
     """Registrar nuevo empleado"""
     try:
-        usuario = await AuthService.register_user(db, user_data)
-        return usuario
-    except ValidationError as e:
-        error_messages = [f"{error['loc'][0]}: {error['msg']}" for error in e.errors()]
-        raise HTTPException(status_code=422, detail="; ".join(error_messages))
+        # Sanitizar datos de entrada
+        sanitized_data = {field: DataSanitizer.sanitize_string(value) if isinstance(value, str) else value
+                          for field, value in user_data.model_dump().items()}
+
+        # Crear instancia de Empleado
+        new_user = Empleado(**sanitized_data)
+        new_user.contraseña = AuthService.hash_password(new_user.contraseña)
+
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        return new_user
+
     except IntegrityError as e:
         await db.rollback()
-        raise HTTPException(status_code=409, detail="Usuario, DNI o email ya existe")
+        raise HTTPException(status_code=400, detail="El usuario ya existe o hay un conflicto de integridad")
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error en registro: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+        
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -82,7 +93,7 @@ async def actualizar_usuario(id: int, data: EmpleadoUpdate, db: AsyncSession = D
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
         # Sanitizar y actualizar campos
-        for field, value in data.dict(exclude_unset=True).items():
+        for field, value in data.model_dump(exclude_unset=True).items():
             if value is not None:
                 if field == "contraseña":
                     value = AuthService.hash_password(value)

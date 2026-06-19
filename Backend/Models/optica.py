@@ -37,6 +37,7 @@ class Venta(Base):
     receta = relationship("RecetaMedica", back_populates="ventas")
     paciente = relationship("Paciente", back_populates="ventas")
     vendedor = relationship("Vendedor", back_populates="ventas")
+    orden_trabajo = relationship("OrdenTrabajo", back_populates="venta", uselist=False, cascade="all, delete-orphan")
 
     items = relationship("DetalleVenta", back_populates="venta", cascade="all, delete-orphan")
 
