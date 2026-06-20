@@ -1,4 +1,3 @@
-
 from passlib.context import CryptContext  # type: ignore[import-not-found]
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -13,11 +12,15 @@ class AuthService:
     '''Servicio de autenticación y registro de usuarios, que incluye funciones para hash de contraseñas, verificación de credenciales y registro de nuevos usuarios.'''
     @staticmethod
     def hash_password(password: str) -> str:
-        return pwd_context.hash(password)
+        # Bcrypt has a 72-byte limit, truncate to be safe
+        password_bytes = password.encode('utf-8')[:72]
+        return pwd_context.hash(password_bytes.decode('utf-8'))
 
     @staticmethod
     def verify_password(plain: str, hashed: str) -> bool:
-        return pwd_context.verify(plain, hashed)
+        # Bcrypt has a 72-byte limit, truncate to match hash_password logic
+        password_bytes = plain.encode('utf-8')[:72]
+        return pwd_context.verify(password_bytes.decode('utf-8'), hashed)
 
     @staticmethod
     async def register_user(db: AsyncSession, user_data: EmpleadoRegister) -> Empleado:
