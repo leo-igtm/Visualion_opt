@@ -1,4 +1,4 @@
-from typing import Any
+
 from passlib.context import CryptContext  # type: ignore[import-not-found]
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select

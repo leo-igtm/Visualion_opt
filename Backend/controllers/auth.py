@@ -15,6 +15,7 @@ router = APIRouter(prefix="/auth", tags=["Autenticación"])
 @router.post("/register", response_model=EmpleadoOut, status_code=status.HTTP_201_CREATED)
 async def register(user_data: EmpleadoRegister, db: AsyncSession = Depends(get_db)):
     """Registrar nuevo empleado"""
+    
     try:
         new_user = await AuthService.register_user(db, user_data)
         return new_user
