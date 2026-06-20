@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from pydantic import ValidationError
 
 from Backend.database.dbconnections_opt import get_db
 from Backend.Models.Usuarios import Empleado
@@ -19,17 +18,15 @@ async def register(user_data: EmpleadoRegister, db: AsyncSession = Depends(get_d
     try:
         new_user = await AuthService.register_user(db, user_data)
         return new_user
-
     except IntegrityError as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail="El usuario ya existe o hay un conflicto de integridad")
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=409, detail="El usuario, DNI o email ya existe")
     except ValueError as e:
+        await db.rollback()
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error al registrar usuario: {str(e)}")
         
 
 
