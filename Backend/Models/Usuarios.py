@@ -5,7 +5,9 @@ from Backend.database.dbconnections_opt import Base
 #Documentacion de estas clases 
 
 class Persona(Base):
-
+    '''Clase base para personas, con atributos comunes a pacientes y empleados'''
+    ''' Incluye campos como DNI, nombre, apellido, teléfono y email, que son esenciales para identificar a cualquier persona en el sistema.
+    se relaciona con pacientes y empleados para que puedan heredar estos atributos y agregar los suyos propios.'''
     __tablename__ = "personas"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -25,6 +27,9 @@ class Persona(Base):
 
 
 class Paciente(Persona):
+    '''Clase para pacientes, hereda de Persona'''
+    ''' Agregamos campos específicos para pacientes, como obra social e historial médico.
+    se relaciona con turnos, ventas y recetas para poder acceder a su información médica y comercial.'''
     __tablename__ = "pacientes"
     
     # Su PK es al mismo tiempo la FK que lo une a la tabla personas
@@ -41,6 +46,8 @@ class Paciente(Persona):
     recetas = relationship("RecetaMedica", back_populates="paciente")
 
 class Empleado(Persona):
+    '''Clase para empleados, hereda de Persona'''
+    ''' Agregamos campos específicos para empleados, como legajo, usuario, contraseña y rol.'''
     __tablename__ = "empleados"
     
     # Su PK es al mismo tiempo la FK que lo une a la tabla personas
@@ -57,6 +64,8 @@ class Empleado(Persona):
     }
 
 class Medico(Empleado):
+    '''Clase para médicos, hereda de Empleado'''
+    ''' Agregamos un campo de matrícula para los médicos, que se usará para validar su identidad y experiencia.'''
     __tablename__ = "medicos"
     
     # Su PK se conecta al ID de la tabla empleados
@@ -74,6 +83,8 @@ class Medico(Empleado):
 
 
 class Tecnico(Empleado):
+    '''Clase para técnicos, hereda de Empleado'''
+    ''' Agregamos un campo de matrícula para los técnicos, que se usará para validar su identidad y experiencia.'''
     __tablename__ = "tecnicos"
     
     id: Mapped[int] = mapped_column(ForeignKey("empleados.id"), primary_key=True)
@@ -86,6 +97,8 @@ class Tecnico(Empleado):
 
 
 class Vendedor(Empleado):
+    '''Clase para vendedores, hereda de Empleado'''
+    ''' Agregamos un campo de comisiones para los vendedores, que se actualizará cada vez que realicen una venta.'''
     __tablename__ = "vendedores"
     
     id: Mapped[int] = mapped_column(ForeignKey("empleados.id"), primary_key=True)

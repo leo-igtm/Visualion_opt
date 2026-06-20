@@ -4,7 +4,8 @@ from sqlalchemy.future import select
 
 #validacion de receta creacion de receta
 class RecetaService:
-    
+    '''Servicio para validar recetas médicas antes de crear ventas o realizar otras operaciones'''
+    ''' Incluye métodos estáticos para validar la existencia de una receta y su asociación con un turno.'''
     @staticmethod
     async def validar_receta(db: AsyncSession, receta_id: int) -> RecetaMedica:
         """Valida que la receta exista y esté asociada a un turno"""

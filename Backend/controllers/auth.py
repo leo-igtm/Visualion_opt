@@ -17,23 +17,15 @@ router = APIRouter(prefix="/auth", tags=["Autenticación"])
 async def register(user_data: EmpleadoRegister, db: AsyncSession = Depends(get_db)):
     """Registrar nuevo empleado"""
     try:
-        # Sanitizar datos de entrada
-        sanitized_data = {field: DataSanitizer.sanitize_string(value) if isinstance(value, str) else value
-                          for field, value in user_data.model_dump().items()}
-
-        # Crear instancia de Empleado
-        new_user = Empleado(**sanitized_data)
-        new_user.contraseña = AuthService.hash_password(new_user.contraseña)
-
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
+        new_user = await AuthService.register_user(db, user_data)
         return new_user
 
     except IntegrityError as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail="El usuario ya existe o hay un conflicto de integridad")
     except ValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         await db.rollback()
