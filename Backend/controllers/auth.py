@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-
 from Backend.database.dbconnections_opt import get_db
 from Backend.Models.Usuarios import Empleado
 from Backend.Schemas.empleado import EmpleadoRegister, UsuarioLogin, TokenResponse, EmpleadoOut, EmpleadoUpdate
