@@ -1,6 +1,7 @@
 from sqlalchemy import Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
+from Backend.patterns.observer import EventSubject, Event
 from datetime import datetime
 
 
@@ -28,10 +29,43 @@ class OrdenTrabajo(Base):
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
     fecha_actualizacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
 
-    # Relaciones
     venta = relationship("Venta", back_populates="orden_trabajo")
     etapas = relationship("EtapaTrabajo", back_populates="orden", cascade="all, delete-orphan")
     historico_estados = relationship("HistoricoEstados", back_populates="orden", cascade="all, delete-orphan")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._event_subject = EventSubject()
+
+    def attach_observer(self, observer):
+        """Suscribir observador"""
+        self._event_subject.attach(observer)
+
+    def detach_observer(self, observer):
+        """Desuscribir observador"""
+        self._event_subject.detach(observer)
+
+    def cambiar_estado(self, nuevo_estado: str, tecnico_id: int | None = None) -> bool:
+        """Cambia estado y notifica observadores"""
+        if nuevo_estado not in EstadoOrden.all_estados():
+            return False
+
+        estado_anterior = self.estado
+        self.estado = nuevo_estado
+
+        event = Event(
+            event_type="orden_estado_cambio",
+            data={
+                "orden_id": self.id,
+                "estado_anterior": estado_anterior,
+                "estado_nuevo": nuevo_estado,
+                "tecnico_id": tecnico_id,
+                "venta_id": self.venta_id
+            }
+        )
+
+        self._event_subject.notify(event)
+        return True
 
 
 class EtapaTrabajo(Base):
@@ -46,7 +80,6 @@ class EtapaTrabajo(Base):
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
     fecha_actualizacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
 
-    # Relaciones
     orden = relationship("OrdenTrabajo", back_populates="etapas")
     tecnico = relationship("Tecnico")
 
@@ -61,6 +94,6 @@ class HistoricoEstados(Base):
     tecnico_id: Mapped[int | None] = mapped_column(ForeignKey('tecnicos.id'), nullable=True)
     fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
 
-    # Relaciones
     orden = relationship("OrdenTrabajo", back_populates="historico_estados")
     tecnico = relationship("Tecnico")
+

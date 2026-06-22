@@ -1,4 +1,4 @@
-import { fetchObtenerPaciente } from '@/service/api';
+import { pacientesService } from '@/service/pacientesService';
 import TablaPacientes from './tabla_pacientes';
 
 export interface Paciente {
@@ -13,7 +13,7 @@ export interface Paciente {
 }
 
 export default async function ListaPacientes() {
-  const pacientes: Paciente[] = await fetchObtenerPaciente();
+  const pacientes: Paciente[] = await pacientesService.listar();
 
   return (
     <TablaPacientes initialData={pacientes} />

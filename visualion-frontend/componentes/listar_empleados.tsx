@@ -1,5 +1,5 @@
 // componentes/ListaEmpleados.tsx
-import { fetchObtenerEmpleados } from '@/service/api';
+import { empleadosService } from '@/service/empleadosService';
 
 // 1. Definimos la estructura exacta que devuelve tu backend (EmpleadoOut)
 interface Empleado {
@@ -23,7 +23,7 @@ interface Empleado {
 
 export default async function ListaEmpleados() {
   // 2. Ejecutamos la petición al servidor tipando la respuesta
-  const empleados: Empleado[] = await fetchObtenerEmpleados();
+  const empleados: Empleado[] = await empleadosService.listar();
 
   return (
     <div className="overflow-x-auto mt-4">

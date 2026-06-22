@@ -66,42 +66,4 @@ export async function DELETE<T>(endpoint: string): Promise<T> {
 
 export const API = { GET, POST, PUT, DELETE };
 
-// Auth functions
-export async function login(usuario: string, contraseña: string) {
-  const response = await POST<{ access_token: string }>("/auth/login", { usuario, contraseña });
-  if (response.access_token) {
-    // Store token in both localStorage and cookies
-    if (typeof window !== "undefined") {
-      localStorage.setItem("token", response.access_token);
-      document.cookie = `token=${response.access_token}; path=/; max-age=86400`;
-    }
-  }
-  return response;
-}
-
-export async function register(userData: any) {
-  return POST("/auth/register", userData);
-}
-
-export async function logout() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
-    document.cookie = "token=; path=/; max-age=0";
-  }
-}
-
-export async function fetchUsuarios() {
-  return GET("/auth/usuarios");
-}
-
-export async function obtenerUsuario(id: number) {
-  return GET(`/auth/usuarios/${id}`);
-}
-
-export async function actualizarUsuario(id: number, userData: any) {
-  return PUT(`/auth/usuarios/${id}`, userData);
-}
-
-export async function eliminarUsuario(id: number) {
-  return DELETE(`/auth/usuarios/${id}`);
-}
+// Auth functions have been moved to authService.ts and empleadosService.ts

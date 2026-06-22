@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Paciente } from './listar_paciente';
-import { crearPaciente, actualizarPaciente, eliminarPaciente, buscarPacientePorDni, fetchObtenerPaciente } from '@/service/api';
+import { pacientesService } from '@/service/pacientesService';
 
 interface TablaPacientesProps {
   initialData: Paciente[];
@@ -28,12 +28,12 @@ export default function TablaPacientes({ initialData }: TablaPacientesProps) {
 
   const handleBuscar = async () => {
     if (!busqueda) {
-      const data = await fetchObtenerPaciente();
+      const data = await pacientesService.listar();
       setPacientes(data);
       return;
     }
     try {
-      const paciente = await buscarPacientePorDni(busqueda);
+      const paciente = await pacientesService.obtenerPorDni(busqueda);
       setPacientes(paciente ? [paciente] : []);
     } catch (e: any) {
       setError('Error al buscar paciente');
@@ -73,8 +73,8 @@ export default function TablaPacientes({ initialData }: TablaPacientesProps) {
   const handleEliminar = async (dni: string) => {
     if (confirm('¿Está seguro de eliminar este paciente?')) {
       try {
-        await eliminarPaciente(dni);
-        const data = await fetchObtenerPaciente();
+        await pacientesService.eliminar(dni);
+        const data = await pacientesService.listar();
         setPacientes(data);
       } catch (e: any) {
         setError(e.message || 'Error al eliminar');
@@ -87,12 +87,12 @@ export default function TablaPacientes({ initialData }: TablaPacientesProps) {
     setError(null);
     try {
       if (pacienteEditando) {
-        await actualizarPaciente(pacienteEditando.id, formData);
+        await pacientesService.actualizar(pacienteEditando.id, formData);
       } else {
-        await crearPaciente(formData);
+        await pacientesService.crear(formData);
       }
       setModalAbierto(false);
-      const data = await fetchObtenerPaciente();
+      const data = await pacientesService.listar();
       setPacientes(data);
     } catch (e: any) {
       setError(e.message || 'Error al guardar');

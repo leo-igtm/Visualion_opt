@@ -4,6 +4,7 @@ from sqlalchemy import select
 from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor
 from Backend.Schemas.empleado import EmpleadoRegister
 from Backend.sanitizers.data_sanitizer import DataSanitizer
+from Backend.constants import AuthConstants
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -12,14 +13,12 @@ class AuthService:
     '''Servicio de autenticación y registro de usuarios, que incluye funciones para hash de contraseñas, verificación de credenciales y registro de nuevos usuarios.'''
     @staticmethod
     def hash_password(password: str) -> str:
-        # Bcrypt has a 72-byte limit, truncate to be safe
-        password_bytes = password.encode('utf-8')[:72]
+        password_bytes = password.encode('utf-8')[:AuthConstants.BCRYPT_MAX_PASSWORD_BYTES]
         return pwd_context.hash(password_bytes.decode('utf-8'))
 
     @staticmethod
     def verify_password(plain: str, hashed: str) -> bool:
-        # Bcrypt has a 72-byte limit, truncate to match hash_password logic
-        password_bytes = plain.encode('utf-8')[:72]
+        password_bytes = plain.encode('utf-8')[:AuthConstants.BCRYPT_MAX_PASSWORD_BYTES]
         return pwd_context.verify(password_bytes.decode('utf-8'), hashed)
 
     @staticmethod

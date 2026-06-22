@@ -6,12 +6,20 @@ from Backend.controllers.clinica import router as clinica_router
 from Backend.controllers.optica import router as optica_router
 from Backend.controllers.taller import router as taller_router
 from fastapi.middleware.cors import CORSMiddleware
+from Backend.logger.logger import logger_manager
+
+logger = logger_manager.get_logger()
 
 '''Inicialización de la aplicación FastAPI'''
 '''Se crean los routers para cada módulo y se agregan a la aplicación.'''
 app = FastAPI(
     title="Visualion API backend ",
 )
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Iniciando aplicación Visualion API")
+
 
 app.include_router(auth_router)
 app.include_router(empleado_router)

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { register } from '@/service/api';
+import { authService } from '@/service/authService';
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -41,7 +41,7 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            await register(formData);
+            await authService.register(formData as any);
             router.push('/login?registered=true');
         } catch (err: any) {
             setError(err.message || 'Error al registrar');

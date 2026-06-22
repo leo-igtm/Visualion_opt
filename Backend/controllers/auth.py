@@ -6,7 +6,9 @@ from Backend.database.dbconnections_opt import get_db
 from Backend.Models.Usuarios import Empleado
 from Backend.Schemas.empleado import EmpleadoRegister, UsuarioLogin, TokenResponse, EmpleadoOut, EmpleadoUpdate
 from Backend.services.auth_service import AuthService
+from Backend.services.oauth_service import GoogleOAuthService, GitHubOAuthService
 from Backend.sanitizers.data_sanitizer import DataSanitizer
+from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -118,3 +120,107 @@ async def eliminar_usuario(id: int, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/oauth/google/url")
+async def get_google_auth_url():
+    """Retorna URL para autenticar con Google"""
+    if not GoogleOAuthService.CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth no está configurado")
+    return {"url": GoogleOAuthService.get_auth_url()}
+
+
+@router.post("/oauth/google/callback")
+async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
+    """Callback después de autenticación con Google"""
+
+    user_info = await GoogleOAuthService.verify_token(code)
+
+    if not user_info:
+        raise HTTPException(status_code=401, detail="Google authentication failed")
+
+    # Crear o obtener usuario
+    query = select(Empleado).where(Empleado.email == user_info["email"])
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        # Crear nuevo usuario con Google
+        user = Empleado(
+            dni="GOOGLE_" + user_info["email"],
+            nombre=user_info.get("name", "Google User"),
+            email=user_info["email"],
+            usuario=user_info["email"],
+            contraseña="OAUTH_GOOGLE",
+            rol="empleado",
+            legajo="OAUTH_" + str(datetime.now().timestamp())
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    # Generar JWT
+    token = AuthService.hash_password(str(user.id))
+
+    return {
+        "access_token": token,
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "nombre": user.nombre,
+            "provider": "google"
+        }
+    }
+
+
+@router.get("/oauth/github/url")
+async def get_github_auth_url():
+    """Retorna URL para autenticar con GitHub"""
+    if not GitHubOAuthService.CLIENT_ID:
+        raise HTTPException(status_code=500, detail="GitHub OAuth no está configurado")
+    return {"url": GitHubOAuthService.get_auth_url()}
+
+
+@router.post("/oauth/github/callback")
+async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
+    """Callback después de autenticación con GitHub"""
+
+    user_info = await GitHubOAuthService.verify_token(code)
+
+    if not user_info:
+        raise HTTPException(status_code=401, detail="GitHub authentication failed")
+
+    # Crear o obtener usuario
+    query = select(Empleado).where(Empleado.email == user_info["email"])
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        # Crear nuevo usuario con GitHub
+        user = Empleado(
+            dni="GITHUB_" + user_info.get("username", user_info["email"]),
+            nombre=user_info.get("name", user_info.get("username", "GitHub User")),
+            email=user_info["email"],
+            usuario=user_info.get("username", user_info["email"]),
+            contraseña="OAUTH_GITHUB",
+            rol="empleado",
+            legajo="OAUTH_" + str(datetime.now().timestamp())
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    # Generar JWT
+    token = AuthService.hash_password(str(user.id))
+
+    return {
+        "access_token": token,
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "nombre": user.nombre,
+            "username": user_info.get("username"),
+            "provider": "github"
+        }
+    }
+

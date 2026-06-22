@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchUsuarios, eliminarUsuario } from '@/service/api';
+import { empleadosService } from '@/service/empleadosService';
 
 export default function UsuariosPage() {
     const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -15,7 +15,7 @@ export default function UsuariosPage() {
     const cargarUsuarios = async () => {
         try {
             setLoading(true);
-            const data = await fetchUsuarios();
+            const data = await empleadosService.listar();
             setUsuarios(data);
         } catch (error) {
             console.error('Error al cargar usuarios:', error);
@@ -28,7 +28,7 @@ export default function UsuariosPage() {
         if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
             try {
                 setDeleting(id);
-                await eliminarUsuario(id);
+                await empleadosService.eliminar(id);
                 cargarUsuarios();
             } catch (error) {
                 console.error('Error:', error);

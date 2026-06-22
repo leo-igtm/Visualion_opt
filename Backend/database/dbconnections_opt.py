@@ -7,6 +7,7 @@ from sqlalchemy import DateTime
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
+from Backend.patterns.singleton import Singleton
 
 load_dotenv()
 database_url_raw = os.getenv("DATABASE_URL")
@@ -17,24 +18,29 @@ if database_url_raw is None:
 database_url: str = database_url_raw
 
 
-class _DatabaseSingleton:
-    _instance: "_DatabaseSingleton | None" = None
+class DatabaseManager(Singleton):
+    """
+    Gestor de BD - Singleton
+    Solo una instancia de conexión en toda la app
+    """
     engine: AsyncEngine
     session_factory: async_sessionmaker[AsyncSession]
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance.engine = create_async_engine(database_url, echo=True)
-            cls._instance.session_factory = async_sessionmaker(
-                bind=cls._instance.engine,
+    def __init__(self):
+        if not hasattr(self, '_initialized'):
+            self.engine = create_async_engine(database_url, echo=True)
+            self.session_factory = async_sessionmaker(
+                bind=self.engine,
                 class_=AsyncSession,
                 expire_on_commit=False,
             )
-        return cls._instance
+            self._initialized = True
+
+    async def close(self):
+        await self.engine.dispose()
 
 
-db = _DatabaseSingleton()
+db = DatabaseManager()
 AsyncSessionLocal = db.session_factory
 
 

@@ -8,9 +8,15 @@ from Backend.Models.optica import Venta
 from Backend.Models.Usuarios import Tecnico
 from Backend.Schemas import taller as schemas
 from Backend.validators.taller_validators import OrdenTrabajoValidator
+from Backend.patterns.observer import Event
+from Backend.services.event_service import EventService
+from Backend.services.orden_service import OrdenService
 from pydantic import ValidationError
 
 router = APIRouter(prefix="/taller", tags=["Taller y Laboratorio"])
+
+# Obtener sujeto de eventos global
+orden_subject = EventService.get_orden_subject()
 
 
 @router.post("/ordenes", response_model=schemas.OrdenTrabajoResponse, status_code=status.HTTP_201_CREATED)
@@ -41,6 +47,18 @@ async def crear_orden_trabajo(orden_in: schemas.OrdenTrabajoCreate, db: AsyncSes
         db.add(nueva_orden)
         await db.commit()
         await db.refresh(nueva_orden)
+
+        # Notificar creación de orden
+        event = Event(
+            event_type="orden_creada",
+            data={
+                "orden_id": nueva_orden.id,
+                "venta_id": nueva_orden.venta_id,
+                "estado": nueva_orden.estado
+            }
+        )
+        orden_subject.notify(event)
+
         return nueva_orden
 
     except ValidationError as e:
@@ -89,7 +107,7 @@ async def cambiar_estado_orden(
     datos: schemas.CambiarEstadoOrden,
     db: AsyncSession = Depends(get_db)
 ):
-    """Update order state with validation"""
+    """Update order state with validation and notify observers"""
     # Obtener la orden
     query = select(models.OrdenTrabajo).where(models.OrdenTrabajo.id == orden_id)
     resultado = await db.execute(query)
@@ -125,6 +143,20 @@ async def cambiar_estado_orden(
     db.add(db_orden)
     await db.commit()
     await db.refresh(db_orden)
+
+    # Notificar cambio de estado a observadores
+    event = Event(
+        event_type="orden_estado_cambio",
+        data={
+            "orden_id": orden_id,
+            "estado_anterior": estado_anterior,
+            "estado_nuevo": datos.estado_nuevo,
+            "tecnico_id": datos.tecnico_id,
+            "venta_id": db_orden.venta_id
+        }
+    )
+    orden_subject.notify(event)
+
     return db_orden
 
 
@@ -168,6 +200,19 @@ async def actualizar_etapa_trabajo(
 
     await db.commit()
     await db.refresh(db_etapa)
+
+    # Notificar completación de etapa
+    event = Event(
+        event_type="etapa_completada",
+        data={
+            "orden_id": orden_id,
+            "etapa": etapa_in.etapa,
+            "completado": etapa_in.completado,
+            "tecnico_id": etapa_in.tecnico_id
+        }
+    )
+    orden_subject.notify(event)
+
     return db_etapa
 
 
@@ -187,3 +232,24 @@ async def obtener_historico_estados(orden_id: int, db: AsyncSession = Depends(ge
     ).order_by(models.HistoricoEstados.fecha_creacion.desc())
     resultado_historico = await db.execute(query_historico)
     return resultado_historico.scalars().all()
+
+
+@router.get("/ordenes-composite/{numero_orden}/resumen")
+async def obtener_resumen_orden_composite(numero_orden: str):
+    """Obtiene resumen de orden usando Composite Pattern (demo)"""
+    orden = OrdenService.crear_orden_estandar(numero_orden)
+    return OrdenService.calcular_resumen(orden)
+
+
+@router.post("/ordenes-composite/crear-personalizada")
+async def crear_orden_personalizada(
+    numero_orden: str,
+    etapas: list[dict]
+):
+    """Crea orden personalizada usando Composite Pattern"""
+    try:
+        orden = OrdenService.crear_orden_personalizada(numero_orden, etapas)
+        return OrdenService.calcular_resumen(orden)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

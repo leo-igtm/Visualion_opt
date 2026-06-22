@@ -1,0 +1,2 @@
+2026-06-22 17:11:22,053 - visualion_app - INFO - Logger Singleton iniciado
+2026-06-22 17:16:03,826 - visualion_app - INFO - EVENT: test_event - Data: {'orden_id': 1, 'estado': 'procesando'}

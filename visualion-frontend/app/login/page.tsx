@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { login } from '@/service/api';
+import { authService } from '@/service/authService';
 
 export default function LoginPage() {
     const [usuario, setUsuario] = useState('');
@@ -17,8 +17,8 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const response = await login(usuario, contraseña);
-            localStorage.setItem('token', response.access_token);
+            const response = await authService.login(usuario, contraseña);
+            authService.guardarToken(response.access_token);
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Error al iniciar sesión');
