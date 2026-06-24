@@ -9,14 +9,17 @@ from decimal import Decimal
 from datetime import datetime
 
 
+ 
 class PaymentStrategy(ABC):
     """
     Interfaz para estrategias de pago
     """
-
+    #GENERAR FUNCION VALIDATE, PROCESS Y GET_FEE
     @abstractmethod
     def validate(self, payment_data: dict) -> bool:
         """Valida los datos de pago"""
+        
+        
         pass
 
     @abstractmethod
@@ -131,25 +134,28 @@ class CheckPaymentStrategy(PaymentStrategy):
 
 # Factory para obtener estrategia por método
 class PaymentStrategyFactory:
-    """Factory para crear estrategias de pago"""
+    """Factory para crear estrategias de pago.
+    CORRECCIÓN BUG #7: cada llamada crea una instancia nueva para evitar
+    contaminación de estado en entornos concurrentes (FastAPI async).
+    """
 
-    _strategies = {
-        "efectivo": CashPaymentStrategy(),
-        "tarjeta_credito": CreditCardPaymentStrategy(),
-        "tarjeta_debito": DebitCardPaymentStrategy(),
-        "transferencia": TransferPaymentStrategy(),
-        "cheque": CheckPaymentStrategy()
+    _strategy_classes: dict = {
+        "efectivo": CashPaymentStrategy,
+        "tarjeta_credito": CreditCardPaymentStrategy,
+        "tarjeta_debito": DebitCardPaymentStrategy,
+        "transferencia": TransferPaymentStrategy,
+        "cheque": CheckPaymentStrategy,
     }
 
     @classmethod
     def get_strategy(cls, method: str) -> PaymentStrategy:
-        """Obtiene estrategia de pago por método"""
-        strategy = cls._strategies.get(method.lower())
-        if strategy is None:
+        """Obtiene estrategia de pago por método (instancia nueva por llamada)"""
+        strategy_class = cls._strategy_classes.get(method.lower())
+        if strategy_class is None:
             raise ValueError(f"Método de pago no soportado: {method}")
-        return strategy
+        return strategy_class()
 
     @classmethod
     def get_available_methods(cls) -> list[str]:
         """Retorna lista de métodos disponibles"""
-        return list(cls._strategies.keys())
+        return list(cls._strategy_classes.keys())

@@ -1,33 +1,102 @@
+import os
+from datetime import datetime, timedelta
+from typing import Optional
+
+from jose import jwt  # type: ignore[import-not-found]
 from passlib.context import CryptContext  # type: ignore[import-not-found]
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+
 from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor
 from Backend.Schemas.empleado import EmpleadoRegister
 from Backend.sanitizers.data_sanitizer import DataSanitizer
 from Backend.constants import AuthConstants
 
+# ——— Configuración ———
+SECRET_KEY: str = os.getenv("SECRET_KEY", "visualion_secret_key_2024_change_in_production")
+ALGORITHM: str = AuthConstants.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_HOURS: int = AuthConstants.JWT_EXPIRATION_HOURS
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
-    '''Servicio de autenticación y registro de usuarios, que incluye funciones para hash de contraseñas, verificación de credenciales y registro de nuevos usuarios.'''
+    """Servicio de autenticación JWT con bcrypt para Visualion_Opt."""
+
+    # ——— Contraseñas ———
+
     @staticmethod
     def hash_password(password: str) -> str:
-        password_bytes = password.encode('utf-8')[:AuthConstants.BCRYPT_MAX_PASSWORD_BYTES]
-        return pwd_context.hash(password_bytes.decode('utf-8'))
+        password_bytes = password.encode("utf-8")[: AuthConstants.BCRYPT_MAX_PASSWORD_BYTES]
+        return pwd_context.hash(password_bytes.decode("utf-8"))
 
     @staticmethod
     def verify_password(plain: str, hashed: str) -> bool:
-        password_bytes = plain.encode('utf-8')[:AuthConstants.BCRYPT_MAX_PASSWORD_BYTES]
-        return pwd_context.verify(password_bytes.decode('utf-8'), hashed)
+        """
+        Verifica la contraseña. Soporta dos casos:
+        1. Hash bcrypt: lo verifica normalmente.
+        2. Texto plano (usuarios migrados de Laragon): compara directo y
+           opcionalmente podría actualizarse el hash, pero por ahora solo permite el acceso.
+        """
+        # Caso 1: hash bcrypt válido
+        if hashed.startswith("$2b$") or hashed.startswith("$2a$"):
+            try:
+                password_bytes = plain.encode("utf-8")[: AuthConstants.BCRYPT_MAX_PASSWORD_BYTES]
+                return pwd_context.verify(password_bytes.decode("utf-8"), hashed)
+            except Exception:
+                return False
+        # Caso 2: contraseña en texto plano (usuarios pre-existentes en BD)
+        return plain == hashed
+
+    # ——— JWT ———
+
+    @staticmethod
+    def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+        to_encode = data.copy()
+        expire = datetime.utcnow() + (
+            expires_delta if expires_delta else timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+        )
+        to_encode.update({"exp": expire})
+        return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    @staticmethod
+    def decode_token(token: str) -> Optional[dict]:
+        try:
+            return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except Exception:
+            return None
+
+    # ——— Login ———
+
+    @staticmethod
+    async def login_user(db: AsyncSession, username: str, password: str) -> str:
+        """Autentica usuario y retorna un JWT firmado."""
+        query = select(Empleado).where(Empleado.usuario == username)
+        result = await db.execute(query)
+        user = result.scalar_one_or_none()
+
+        if not user or not AuthService.verify_password(password, user.contraseña):
+            raise ValueError("Credenciales inválidas")
+
+        # Si la contraseña estaba en texto plano, actualizar a bcrypt
+        if not (user.contraseña.startswith("$2b$") or user.contraseña.startswith("$2a$")):
+            user.contraseña = AuthService.hash_password(password)
+            await db.commit()
+
+        token_data = {
+            "sub": str(user.id),
+            "usuario": user.usuario,
+            "rol": user.rol,
+        }
+        return AuthService.create_access_token(token_data)
+
+    # ——— Registro ———
 
     @staticmethod
     async def register_user(db: AsyncSession, user_data: EmpleadoRegister) -> Empleado:
-        """Registra nuevo usuario con sanitización y creación del subclass correcto según rol"""
-        # Obtener datos como dict y sanitizar
+        """Registra nuevo usuario con sanitización y crea el subclass correcto según rol."""
         data_dict = user_data.model_dump()
 
-        # Sanitizar campos string
         if data_dict.get("nombre"):
             data_dict["nombre"] = DataSanitizer.sanitize_string(data_dict["nombre"])
         if data_dict.get("apellido"):
@@ -39,14 +108,11 @@ class AuthService:
         if data_dict.get("dni"):
             data_dict["dni"] = DataSanitizer.sanitize_dni(data_dict["dni"])
 
-        # Hash password
         hashed_pw = AuthService.hash_password(data_dict["contraseña"])
-
-        # Create appropriate subclass based on role
         rol = data_dict.get("rol", "empleado")
 
         if rol == "medico":
-            user = Medico(
+            user: Empleado = Medico(
                 dni=data_dict["dni"],
                 nombre=data_dict["nombre"],
                 apellido=data_dict["apellido"],
@@ -57,7 +123,7 @@ class AuthService:
                 rol="medico",
                 legajo=data_dict["legajo"],
                 matricula=data_dict.get("matricula") or "",
-                especialidad=data_dict.get("especialidad") or ""
+                especialidad=data_dict.get("especialidad") or "",
             )
         elif rol == "tecnico":
             user = Tecnico(
@@ -70,7 +136,7 @@ class AuthService:
                 contraseña=hashed_pw,
                 rol="tecnico",
                 legajo=data_dict["legajo"],
-                matricula_optico=data_dict.get("matricula_optico") or ""
+                matricula_optico=data_dict.get("matricula_optico") or "",
             )
         elif rol == "vendedor":
             user = Vendedor(
@@ -83,7 +149,7 @@ class AuthService:
                 contraseña=hashed_pw,
                 rol="vendedor",
                 legajo=data_dict["legajo"],
-                comisiones=data_dict.get("comisiones") or 0.0
+                comisiones=data_dict.get("comisiones") or 0.0,
             )
         else:
             user = Empleado(
@@ -95,22 +161,10 @@ class AuthService:
                 usuario=data_dict["usuario"],
                 contraseña=hashed_pw,
                 rol=rol,
-                legajo=data_dict["legajo"]
+                legajo=data_dict["legajo"],
             )
 
         db.add(user)
         await db.commit()
         await db.refresh(user)
         return user
-
-    @staticmethod
-    async def login_user(db: AsyncSession, username: str, password: str) -> str:
-        """Autentica usuario y retorna token"""
-        query = select(Empleado).where(Empleado.usuario == username)
-        result = await db.execute(query)
-        user = result.scalar_one_or_none()
-
-        if not user or not AuthService.verify_password(password, user.contraseña):
-            raise ValueError("Credenciales inválidas")
-
-        return f"token_{user.id}_{user.usuario}"

@@ -48,13 +48,13 @@ async def crear_orden_trabajo(orden_in: schemas.OrdenTrabajoCreate, db: AsyncSes
         await db.commit()
         await db.refresh(nueva_orden)
 
-        # Notificar creación de orden
+        # CORRECCIÓN BUG #3: serializar estado como string explícito
         event = Event(
             event_type="orden_creada",
             data={
                 "orden_id": nueva_orden.id,
                 "venta_id": nueva_orden.venta_id,
-                "estado": nueva_orden.estado
+                "estado": str(nueva_orden.estado)
             }
         )
         orden_subject.notify(event)
@@ -63,6 +63,8 @@ async def crear_orden_trabajo(orden_in: schemas.OrdenTrabajoCreate, db: AsyncSes
 
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
@@ -111,8 +113,11 @@ async def cambiar_estado_orden(
     db: AsyncSession = Depends(get_db)
 ):
     """Update order state with validation and notify observers"""
-    # Obtener la orden
-    query = select(models.OrdenTrabajo).where(models.OrdenTrabajo.id == orden_id)
+    # CORRECCIÓN BUG #1: Cargar relaciones desde el principio para el response
+    query = select(models.OrdenTrabajo).where(models.OrdenTrabajo.id == orden_id).options(
+        selectinload(models.OrdenTrabajo.etapas),
+        selectinload(models.OrdenTrabajo.historico_estados)
+    )
     resultado = await db.execute(query)
     db_orden = resultado.scalars().first()
     if not db_orden:
@@ -131,20 +136,21 @@ async def cambiar_estado_orden(
         if not db_tecnico:
             raise HTTPException(status_code=404, detail=f"Técnico con ID {datos.tecnico_id} no encontrado")
 
-    # Actualizar estado
     estado_anterior = db_orden.estado
+
+    # CORRECCIÓN BUG #2: Primero agregar ambos cambios (estado + histórico) y commitear JUNTOS
     db_orden.estado = datos.estado_nuevo
 
-    # Registrar en histórico
     historico = models.HistoricoEstados(
         orden_id=orden_id,
         estado_anterior=estado_anterior,
         estado_nuevo=datos.estado_nuevo,
         tecnico_id=datos.tecnico_id
     )
+    db.add(historico)
+    db.add(db_orden)
+
     try:
-        db.add(historico)
-        db.add(db_orden)
         await db.commit()
         await db.refresh(db_orden)
     except Exception as e:
@@ -156,8 +162,8 @@ async def cambiar_estado_orden(
         event_type="orden_estado_cambio",
         data={
             "orden_id": orden_id,
-            "estado_anterior": estado_anterior,
-            "estado_nuevo": datos.estado_nuevo,
+            "estado_anterior": str(estado_anterior),
+            "estado_nuevo": str(datos.estado_nuevo),
             "tecnico_id": datos.tecnico_id,
             "venta_id": db_orden.venta_id
         }
@@ -170,10 +176,16 @@ async def cambiar_estado_orden(
 @router.put("/ordenes/{orden_id}/etapa", response_model=schemas.EtapaTrabajoResponse)
 async def actualizar_etapa_trabajo(
     orden_id: int,
-    etapa_in: schemas.EtapaTrabajoCreate,
+    etapa_in: schemas.EtapaTrabajoCreate,  # CORRECCIÓN BUG #6: ya no lleva orden_id en body
     db: AsyncSession = Depends(get_db)
 ):
     """Mark a production stage as complete"""
+    # Verificar que la orden existe
+    query_orden = select(models.OrdenTrabajo).where(models.OrdenTrabajo.id == orden_id)
+    resultado_orden = await db.execute(query_orden)
+    if not resultado_orden.scalars().first():
+        raise HTTPException(status_code=404, detail=f"Orden con ID {orden_id} no encontrada")
+
     # Validar técnico si se proporciona
     if etapa_in.tecnico_id:
         query_tecnico = select(Tecnico).where(Tecnico.id == etapa_in.tecnico_id)
@@ -230,14 +242,12 @@ async def actualizar_etapa_trabajo(
 @router.get("/ordenes/{orden_id}/historico", response_model=list[schemas.HistoricoEstadosResponse])
 async def obtener_historico_estados(orden_id: int, db: AsyncSession = Depends(get_db)):
     """Get audit trail of all state transitions"""
-    # Validar que la orden existe
     query = select(models.OrdenTrabajo).where(models.OrdenTrabajo.id == orden_id)
     resultado = await db.execute(query)
     db_orden = resultado.scalars().first()
     if not db_orden:
         raise HTTPException(status_code=404, detail=f"Orden con ID {orden_id} no encontrada")
 
-    # Obtener histórico ordenado por fecha descendente
     query_historico = select(models.HistoricoEstados).where(
         models.HistoricoEstados.orden_id == orden_id
     ).order_by(models.HistoricoEstados.fecha_creacion.desc())
@@ -263,4 +273,3 @@ async def crear_orden_personalizada(
         return OrdenService.calcular_resumen(orden)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-

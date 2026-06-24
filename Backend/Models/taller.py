@@ -26,8 +26,8 @@ class OrdenTrabajo(Base):
     estado: Mapped[str] = mapped_column(String(50), default=EstadoOrden.RECIBIDA, nullable=False)
     descripcion_trabajo: Mapped[str | None] = mapped_column(Text, nullable=True)
     fecha_entrega_esperada: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
-    fecha_actualizacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
+
+    # CORRECCIÓN BUG #4: Removidas fecha_creacion y fecha_actualizacion — ya las hereda de Base
 
     venta = relationship("Venta", back_populates="orden_trabajo")
     etapas = relationship("EtapaTrabajo", back_populates="orden", cascade="all, delete-orphan")
@@ -77,8 +77,8 @@ class EtapaTrabajo(Base):
     tecnico_id: Mapped[int | None] = mapped_column(ForeignKey('tecnicos.id'), nullable=True)
     completado: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     notas: Mapped[str | None] = mapped_column(Text, nullable=True)
-    fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
-    fecha_actualizacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
+
+    # CORRECCIÓN BUG #5: Removidas fecha_creacion y fecha_actualizacion — ya las hereda de Base
 
     orden = relationship("OrdenTrabajo", back_populates="etapas")
     tecnico = relationship("Tecnico")
@@ -92,8 +92,8 @@ class HistoricoEstados(Base):
     estado_anterior: Mapped[str | None] = mapped_column(String(50), nullable=True)
     estado_nuevo: Mapped[str] = mapped_column(String(50), nullable=False)
     tecnico_id: Mapped[int | None] = mapped_column(ForeignKey('tecnicos.id'), nullable=True)
-    fecha_creacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default="now()")
+
+    # fecha_creacion heredada de Base
 
     orden = relationship("OrdenTrabajo", back_populates="historico_estados")
     tecnico = relationship("Tecnico")
-

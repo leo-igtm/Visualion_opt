@@ -7,6 +7,7 @@ from Backend.Models import taller as models_taller
 from Backend.Models.Usuarios import Paciente, Vendedor
 from Backend.Models.clinica import RecetaMedica
 from Backend.Schemas import optica as schemas
+from Backend.patterns.strategy import PaymentStrategyFactory
 
 router = APIRouter(prefix="/optica", tags=["Óptica - Ventas y Productos"])
 
@@ -29,6 +30,14 @@ async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(
         if not resultado_receta.scalars().first():
             raise HTTPException(status_code=404, detail=f"Receta con ID {venta_in.receta_id} no encontrada")
     
+    # CORRECCIÓN BUG #8: invocar la estrategia de pago antes de crear la venta
+    try:
+        payment_strategy = PaymentStrategyFactory.get_strategy(venta_in.estado_pago)
+        if not payment_strategy.validate({}):
+            raise HTTPException(status_code=400, detail="Datos de pago inválidos")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     # 1. Creamos la cabecera de la venta
     nueva_venta = models.Venta(
         numeroComprobante=venta_in.numeroComprobante,
