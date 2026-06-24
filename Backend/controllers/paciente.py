@@ -29,8 +29,12 @@ async def crear_paciente(paciente_in: PacienteCreate, db: AsyncSession = Depends
     )
 
     db.add(nuevo_paciente)
-    await db.commit()
-    await db.refresh(nuevo_paciente)
+    try:
+        await db.commit()
+        await db.refresh(nuevo_paciente)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     return nuevo_paciente
 
 
@@ -78,8 +82,12 @@ async def actualizar_paciente(paciente_id: int, paciente_in: PacienteUpdate, db:
         paciente.historial_medico = paciente_in.historial_medico
 
     db.add(paciente)
-    await db.commit()
-    await db.refresh(paciente)
+    try:
+        await db.commit()
+        await db.refresh(paciente)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     return paciente
 
 
@@ -91,8 +99,12 @@ async def eliminar_paciente(paciente_dni: str, db: AsyncSession = Depends(get_db
     if not paciente:
         raise HTTPException(status_code=404, detail="Paciente no encontrado.")
 
-    await db.delete(paciente)
-    await db.commit()
+    try:
+        await db.delete(paciente)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     return {"detail": "Paciente eliminado exitosamente."}
 
 @router.get("/", response_model=list[PacienteOut]) 

@@ -23,8 +23,8 @@ export default function LoginPage() {
             const response = await authService.login(usuario, contraseña);
             authService.guardarToken(response.access_token);
             router.push('/dashboard');
-        } catch (err: any) {
-            setError(err.message || 'Error al iniciar sesión');
+        } catch (err: unknown) {
+            setError((err as Error).message || 'Error al iniciar sesión');
         } finally {
             setLoading(false);
         }
@@ -34,7 +34,7 @@ export default function LoginPage() {
         try {
             const url = await oauthFrontendService.getGoogleAuthUrl();
             window.location.href = url;
-        } catch (err) {
+        } catch {
             setError('Error al conectar con Google');
         }
     };
@@ -43,7 +43,7 @@ export default function LoginPage() {
         try {
             const url = await oauthFrontendService.getGithubAuthUrl();
             window.location.href = url;
-        } catch (err) {
+        } catch {
             setError('Error al conectar con GitHub');
         }
     };

@@ -63,6 +63,9 @@ async def crear_orden_trabajo(orden_in: schemas.OrdenTrabajoCreate, db: AsyncSes
 
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
 @router.get("/ordenes", response_model=list[schemas.OrdenTrabajoResponse])
@@ -139,10 +142,14 @@ async def cambiar_estado_orden(
         estado_nuevo=datos.estado_nuevo,
         tecnico_id=datos.tecnico_id
     )
-    db.add(historico)
-    db.add(db_orden)
-    await db.commit()
-    await db.refresh(db_orden)
+    try:
+        db.add(historico)
+        db.add(db_orden)
+        await db.commit()
+        await db.refresh(db_orden)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
     # Notificar cambio de estado a observadores
     event = Event(
@@ -198,8 +205,12 @@ async def actualizar_etapa_trabajo(
         )
         db.add(db_etapa)
 
-    await db.commit()
-    await db.refresh(db_etapa)
+    try:
+        await db.commit()
+        await db.refresh(db_etapa)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
     # Notificar completación de etapa
     event = Event(

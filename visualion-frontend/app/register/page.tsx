@@ -41,10 +41,10 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            await authService.register(formData as any);
+            await authService.register(formData);
             router.push('/login?registered=true');
-        } catch (err: any) {
-            setError(err.message || 'Error al registrar');
+        } catch (err: unknown) {
+            setError((err as Error).message || 'Error al registrar');
         } finally {
             setLoading(false);
         }

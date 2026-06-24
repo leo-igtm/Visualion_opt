@@ -2,7 +2,7 @@
 import { API } from "./api";
 import { Empleado, EmpleadoRegister } from "./authService";
 
-export { Empleado, EmpleadoRegister } from "./authService";
+export type { Empleado, EmpleadoRegister } from "./authService";
 
 export const empleadosService = {
   async listar(): Promise<Empleado[]> {

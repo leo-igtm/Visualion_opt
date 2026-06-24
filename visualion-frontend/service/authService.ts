@@ -1,5 +1,5 @@
 // services/authService.ts
-import { API, APIError } from "./api";
+import { API } from "./api";
 
 export interface AuthResponse {
   access_token: string;

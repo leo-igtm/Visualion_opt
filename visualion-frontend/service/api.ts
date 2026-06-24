@@ -46,14 +46,14 @@ export async function GET<T>(endpoint: string): Promise<T> {
   return fetchAPI<T>(endpoint, { method: "GET" });
 }
 
-export async function POST<T>(endpoint: string, data: any): Promise<T> {
+export async function POST<T>(endpoint: string, data: unknown): Promise<T> {
   return fetchAPI<T>(endpoint, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export async function PUT<T>(endpoint: string, data: any): Promise<T> {
+export async function PUT<T>(endpoint: string, data: unknown): Promise<T> {
   return fetchAPI<T>(endpoint, {
     method: "PUT",
     body: JSON.stringify(data),

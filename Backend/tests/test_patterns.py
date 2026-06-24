@@ -1,11 +1,10 @@
 import unittest
-from unittest.mock import patch, MagicMock
 from decimal import Decimal
 from datetime import timedelta
 
 # Import patterns to test
 from Backend.patterns.singleton import Singleton
-from Backend.patterns.strategy import CashPaymentStrategy, CreditCardPaymentStrategy, TransferPaymentStrategy
+from Backend.patterns.strategy import CashPaymentStrategy, CreditCardPaymentStrategy
 from Backend.patterns.observer import EventSubject, Event, Observer
 from Backend.patterns.composite import OrdenCompuesta, EtapaOtrabajo
 from Backend.constants import AuthConstants
@@ -25,7 +24,7 @@ class TestStrategy(unittest.TestCase):
         strategy = CashPaymentStrategy()
         amount = Decimal("100.00")
         
-        self.assertTrue(strategy.validate({}))
+        self.assertTrue(strategy.validate({}))   
         self.assertEqual(strategy.get_fee(amount), Decimal("0.00"))
         
         result = strategy.process(amount)

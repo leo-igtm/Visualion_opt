@@ -115,6 +115,10 @@ async def crear_producto(producto_in: schemas.ProductoCreate, db: AsyncSession =
         stockDisponible=producto_in.stockDisponible
     )
     db.add(nuevo_producto)
-    await db.commit()
-    await db.refresh(nuevo_producto)
+    try:
+        await db.commit()
+        await db.refresh(nuevo_producto)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     return nuevo_producto

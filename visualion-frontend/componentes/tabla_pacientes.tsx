@@ -35,7 +35,7 @@ export default function TablaPacientes({ initialData }: TablaPacientesProps) {
     try {
       const paciente = await pacientesService.obtenerPorDni(busqueda);
       setPacientes(paciente ? [paciente] : []);
-    } catch (e: any) {
+    } catch {
       setError('Error al buscar paciente');
     }
   };
@@ -76,8 +76,8 @@ export default function TablaPacientes({ initialData }: TablaPacientesProps) {
         await pacientesService.eliminar(dni);
         const data = await pacientesService.listar();
         setPacientes(data);
-      } catch (e: any) {
-        setError(e.message || 'Error al eliminar');
+      } catch (e: unknown) {
+        setError((e as Error).message || 'Error al eliminar');
       }
     }
   };
@@ -94,8 +94,8 @@ export default function TablaPacientes({ initialData }: TablaPacientesProps) {
       setModalAbierto(false);
       const data = await pacientesService.listar();
       setPacientes(data);
-    } catch (e: any) {
-      setError(e.message || 'Error al guardar');
+    } catch (e: unknown) {
+      setError((e as Error).message || 'Error al guardar');
     }
   };
 

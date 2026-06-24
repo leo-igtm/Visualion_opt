@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { tallerService } from "@/service/tallerService";
-import { OrdenTrabajo, HistoricoEstados, EtapaTrabajo } from "@/types/taller";
+import { OrdenTrabajo, HistoricoEstados } from "@/types/taller";
 import { getEstadosPermitidos, getEstadoLabel } from "@/utils/tallerValidations";
 import EstadoOrdenBadge from "./EstadoOrdenBadge";
 

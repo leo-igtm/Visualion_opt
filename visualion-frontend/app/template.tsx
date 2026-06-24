@@ -6,7 +6,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(true);
+    setTimeout(() => setIsVisible(true), 0);
     return () => setIsVisible(false);
   }, []);
 

@@ -1,18 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { empleadosService } from '@/service/empleadosService';
+import { useCallback, useEffect, useState } from 'react';
+import { empleadosService, Empleado } from '@/service/empleadosService';
 
 export default function UsuariosPage() {
-    const [usuarios, setUsuarios] = useState<any[]>([]);
+    const [usuarios, setUsuarios] = useState<Empleado[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<number | null>(null);
 
-    useEffect(() => {
-        cargarUsuarios();
-    }, []);
-
-    const cargarUsuarios = async () => {
+    const cargarUsuarios = useCallback(async () => {
         try {
             setLoading(true);
             const data = await empleadosService.listar();
@@ -22,7 +18,11 @@ export default function UsuariosPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        setTimeout(() => cargarUsuarios(), 0);
+    }, [cargarUsuarios]);
 
     const handleEliminar = async (id: number) => {
         if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {

@@ -73,8 +73,12 @@ async def crear_empleado(empleado_in: EmpleadoCreate, db: AsyncSession = Depends
             raise HTTPException(status_code=400, detail="Rol no válido.")
 
     db.add(nuevo_empleado)
-    await db.commit()
-    await db.refresh(nuevo_empleado)
+    try:
+        await db.commit()
+        await db.refresh(nuevo_empleado)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     return nuevo_empleado
 
 
@@ -105,8 +109,12 @@ async def actualizar_empleado(empleado_id: int, empleado_in: EmpleadoUpdate, db:
     for key, value in empleado_in.model_dump(exclude_unset=True).items():
         setattr(empleado, key, value)
 
-    await db.commit()
-    await db.refresh(empleado)
+    try:
+        await db.commit()
+        await db.refresh(empleado)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     return empleado
 
 @router.delete("/{empleado_id}")
@@ -117,8 +125,12 @@ async def eliminar_empleado(empleado_id: int, db: AsyncSession = Depends(get_db)
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado.")
     
-    await db.delete(empleado)
-    await db.commit()
+    try:
+        await db.delete(empleado)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     return {"detail": "Empleado eliminado exitosamente."}
 
 @router.get("/", response_model=list[EmpleadoOut])

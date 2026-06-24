@@ -45,8 +45,12 @@ async def crear_turno(turno_in: schemas.TurnoCreate, db: AsyncSession = Depends(
         medico_id=turno_in.medico_id
     )
     db.add(nuevo_turno)
-    await db.commit()
-    await db.refresh(nuevo_turno)
+    try:
+        await db.commit()
+        await db.refresh(nuevo_turno)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno al crear turno: {str(e)}")
     return nuevo_turno
 
 @router.post("/recetas/", response_model=schemas.RecetaMedicaResponse, status_code=status.HTTP_201_CREATED)

@@ -2,18 +2,17 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import ModuleCard from '@/componentes/ModuleCard';
 
 export default function HomePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-
   useEffect(() => {
     const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
-    setIsLoading(false);
+    setTimeout(() => {
+      setIsAuthenticated(!!token);
+      setIsLoading(false);
+    }, 0);
   }, []);
 
   const modules = [

@@ -12,7 +12,7 @@ export default function GoogleCallbackPage() {
     useEffect(() => {
         const code = searchParams.get('code');
         if (!code) {
-            setStatus('Error: No se recibió código de autenticación.');
+            setTimeout(() => setStatus('Error: No se recibió código de autenticación.'), 0);
             setTimeout(() => router.push('/login'), 3000);
             return;
         }

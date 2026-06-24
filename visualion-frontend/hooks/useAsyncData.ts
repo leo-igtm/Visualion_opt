@@ -4,9 +4,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { APIError } from "@/service/api";
 
-interface UseAsyncDataOptions {
+interface UseAsyncDataOptions<T> {
   onError?: (error: APIError) => void;
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: T) => void;
   retryDelay?: number;
   maxRetries?: number;
 }
@@ -21,7 +21,7 @@ interface UseAsyncDataReturn<T> {
 
 export function useAsyncData<T>(
   fetchFn: () => Promise<T>,
-  options: UseAsyncDataOptions = {}
+  options: UseAsyncDataOptions<T> = {}
 ): UseAsyncDataReturn<T> {
   const { onError, onSuccess, retryDelay = 1000, maxRetries = 3 } = options;
   const [data, setData] = useState<T | null>(null);
@@ -55,7 +55,7 @@ export function useAsyncData<T>(
   }, [fetchFn, onError, onSuccess, retryDelay, maxRetries, retries]);
 
   useEffect(() => {
-    fetchData();
+    setTimeout(() => fetchData(), 0);
   }, [fetchData]);
 
   const retry = useCallback(async () => {

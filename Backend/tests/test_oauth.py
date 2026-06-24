@@ -1,6 +1,5 @@
 import unittest
-import asyncio
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from Backend.services.oauth_service import GoogleOAuthService, GitHubOAuthService
 
