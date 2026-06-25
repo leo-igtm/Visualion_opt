@@ -1,11 +1,14 @@
 from typing import Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from Backend.Schemas.persona_base import PersonaBase
 
+# --- Schemas para Autenticación ---
+
 class EmpleadoCreate(PersonaBase):
+    """Schema para crear cualquier tipo de empleado (usado por administradores)."""
     legajo: str
     usuario: str
-    contraseña: str
+    password: str
     rol: str
 
     # Campos opcionales dependiendo del rol
@@ -14,35 +17,31 @@ class EmpleadoCreate(PersonaBase):
     matricula_optico: Optional[str] = None
     comisiones: Optional[float] = None
 
-
-class EmpleadoRegister(EmpleadoCreate):
-    @field_validator('contraseña')
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Contraseña debe tener mín 8 caracteres")
-        if not any(c.isupper() for c in v):
-            raise ValueError("Contraseña debe incluir mayúsculas")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Contraseña debe incluir dígitos")
-        return v
-
+class PacienteRegister(PersonaBase):
+    """Schema simple para el registro público de pacientes."""
+    password: str
 
 class UsuarioLogin(BaseModel):
     usuario: str
-    contraseña: str
+    password: str
 
-
-class TokenResponse(BaseModel):
+class Token(BaseModel):
     access_token: str
-    token_type: str = "bearer"
+    token_type: str
 
+class TokenData(BaseModel):
+    usuario: Optional[str] = None
 
-class EmpleadoOut(PersonaBase):
+# --- Schemas para Respuestas y Actualizaciones ---
+
+class EmpleadoResponse(PersonaBase):
+    """Schema para las respuestas de la API, no incluye la contraseña."""
     id: int
     legajo: str
     usuario: str
     rol: str
+
+    
 
 class EmpleadoUpdate(BaseModel):
     dni: Optional[str] = None
@@ -52,7 +51,7 @@ class EmpleadoUpdate(BaseModel):
     email: Optional[str] = None
     legajo: Optional[str] = None
     usuario: Optional[str] = None
-    contraseña: Optional[str] = None
+    password: Optional[str] = None
     rol: Optional[str] = None
 
     # Campos opcionales dependiendo del rol

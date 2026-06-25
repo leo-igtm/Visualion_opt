@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from Backend.controllers.auth import router as auth_router
-from Backend.controllers.empleado import router as empleado_router
+from Backend.controllers.users import router as users_router
 from Backend.controllers.paciente import router as paciente_router
 from Backend.controllers.clinica import router as clinica_router
 from Backend.controllers.optica import router as optica_router
@@ -22,7 +22,7 @@ async def startup_event():
 
 
 app.include_router(auth_router)
-app.include_router(empleado_router)
+app.include_router(users_router)
 app.include_router(clinica_router)
 app.include_router(optica_router)
 app.include_router(taller_router)

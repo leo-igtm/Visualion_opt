@@ -15,9 +15,28 @@ export default function HomePage() {
     }, 0);
   }, []);
 
-  const modules = [
+  // Módulos para el público y pacientes (no autenticados)
+  const publicModules = [
     {
-      title: '👥 Pacientes',
+      title: '📅 Gestionar Mis Turnos',
+      description: 'Consulta, agenda o cancela tus citas médicas de forma rápida y sencilla.',
+      icon: '📅',
+      href: '/portal/turnos', // Ruta para pacientes
+      color: 'blue' as const,
+    },
+    {
+      title: '👓 Catálogo de Productos',
+      description: 'Explora nuestra variedad de armazones, lentes de contacto y accesorios.',
+      icon: '👓',
+      href: '/catalogo', // Ruta pública del catálogo
+      color: 'green' as const,
+    },
+  ];
+
+  // Módulos para empleados (autenticados)
+  const internalModules = [
+    {
+      title: ' Pacientes',
       description: 'Gestiona el registro completo de pacientes, historial médico, obra social y seguimiento de atenciones.',
       icon: '👥',
       href: '/dashboard/Paciente',
@@ -130,7 +149,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
-              { label: 'Módulos Disponibles', value: '6', icon: '📦' },
+              { label: 'Módulos Disponibles', value: isAuthenticated ? internalModules.length.toString() : publicModules.length.toString(), icon: '📦' },
               { label: 'Estado Sistema', value: 'Activo', icon: '✅' },
               { label: 'Roles de Usuario', value: '5', icon: '🔐' },
               { label: 'Versión', value: '1.1.0', icon: '📌' },
@@ -155,16 +174,24 @@ export default function HomePage() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {modules.map((module) => (
-              <ModuleCard
-                key={module.href}
-                title={module.title}
-                description={module.description}
-                icon={module.icon}
-                href={module.href}
-                color={module.color}
-              />
-            ))}
+            {isAuthenticated
+              ? internalModules.map((module) => (
+                  <ModuleCard
+                    key={module.href}
+                    title={module.title}
+                    description={module.description}
+                    icon={module.icon}
+                    href={module.href}
+                    color={module.color}
+                  />
+                ))
+              : publicModules.map((module) => (
+                  <ModuleCard
+                    key={module.href}
+                    {...module}
+                    // Podríamos deshabilitar la tarjeta si el usuario no está logueado para ciertas acciones
+                  />
+                ))}
           </div>
         </section>
 
