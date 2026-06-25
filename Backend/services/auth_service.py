@@ -1,18 +1,17 @@
 import os
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
 
 from jose import jwt  # type: ignore[import-not-found]
 from passlib.context import CryptContext  # type: ignore[import-not-found]
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from Backend.constants import AuthConstants
 from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor
 from Backend.Schemas.empleado import EmpleadoRegister
 from Backend.sanitizers.data_sanitizer import DataSanitizer
-from Backend.constants import AuthConstants
 
-# ——— Configuración ———
 SECRET_KEY: str = os.getenv("SECRET_KEY", "visualion_secret_key_2024_change_in_production")
 ALGORITHM: str = AuthConstants.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_HOURS: int = AuthConstants.JWT_EXPIRATION_HOURS
@@ -21,9 +20,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
-    """Servicio de autenticación JWT con bcrypt para Visualion_Opt."""
-
-    # ——— Contraseñas ———
+    """Servicio de autenticacion JWT con bcrypt para Visualion_Opt."""
 
     @staticmethod
     def hash_password(password: str) -> str:
@@ -33,40 +30,46 @@ class AuthService:
     @staticmethod
     def verify_password(plain: str, hashed: str) -> bool:
         """
-        Verifica la contraseña. Soporta dos casos:
-        1. Hash bcrypt: lo verifica normalmente.
-        2. Texto plano (usuarios migrados de Laragon): compara directo y
-           opcionalmente podría actualizarse el hash, pero por ahora solo permite el acceso.
+        Verifica la contrasena.
+
+        Soporta hashes bcrypt y contrasenas en texto plano de usuarios migrados.
         """
-        # Caso 1: hash bcrypt válido
         if hashed.startswith("$2b$") or hashed.startswith("$2a$"):
             try:
                 password_bytes = plain.encode("utf-8")[: AuthConstants.BCRYPT_MAX_PASSWORD_BYTES]
                 return pwd_context.verify(password_bytes.decode("utf-8"), hashed)
             except Exception:
                 return False
-        # Caso 2: contraseña en texto plano (usuarios pre-existentes en BD)
         return plain == hashed
 
-    # ——— JWT ———
-
     @staticmethod
-    def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    def create_access_token(
+        data: dict[str, Any],
+        expires_delta: Optional[timedelta] = None,
+    ) -> str:
         to_encode = data.copy()
-        expire = datetime.utcnow() + (
+        expire = datetime.now(timezone.utc) + (
             expires_delta if expires_delta else timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
         )
         to_encode.update({"exp": expire})
         return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
     @staticmethod
-    def decode_token(token: str) -> Optional[dict]:
+    def create_user_access_token(user: Empleado) -> str:
+        return AuthService.create_access_token(
+            {
+                "sub": str(user.id),
+                "usuario": str(user.usuario),
+                "rol": str(user.rol),
+            }
+        )
+
+    @staticmethod
+    def decode_token(token: str) -> dict[str, Any] | None:
         try:
             return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         except Exception:
             return None
-
-    # ——— Login ———
 
     @staticmethod
     async def login_user(db: AsyncSession, username: str, password: str) -> str:
@@ -76,25 +79,17 @@ class AuthService:
         user = result.scalar_one_or_none()
 
         if not user or not AuthService.verify_password(password, user.contraseña):
-            raise ValueError("Credenciales inválidas")
+            raise ValueError("Credenciales invalidas")
 
-        # Si la contraseña estaba en texto plano, actualizar a bcrypt
         if not (user.contraseña.startswith("$2b$") or user.contraseña.startswith("$2a$")):
             user.contraseña = AuthService.hash_password(password)
             await db.commit()
 
-        token_data = {
-            "sub": str(user.id),
-            "usuario": user.usuario,
-            "rol": user.rol,
-        }
-        return AuthService.create_access_token(token_data)
-
-    # ——— Registro ———
+        return AuthService.create_user_access_token(user)
 
     @staticmethod
     async def register_user(db: AsyncSession, user_data: EmpleadoRegister) -> Empleado:
-        """Registra nuevo usuario con sanitización y crea el subclass correcto según rol."""
+        """Registra nuevo usuario con sanitizacion y crea el subclass correcto segun rol."""
         data_dict = user_data.model_dump()
 
         if data_dict.get("nombre"):

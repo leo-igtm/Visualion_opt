@@ -4,7 +4,7 @@ from datetime import timedelta
 
 # Import patterns to test
 from Backend.patterns.singleton import Singleton
-from Backend.patterns.strategy import CashPaymentStrategy, CreditCardPaymentStrategy
+from Backend.patterns.strategy import CashPaymentStrategy, CreditCardPaymentStrategy, PaymentStrategyFactory
 from Backend.patterns.observer import EventSubject, Event, Observer
 from Backend.patterns.composite import OrdenCompuesta, EtapaOtrabajo
 from Backend.constants import AuthConstants
@@ -44,6 +44,14 @@ class TestStrategy(unittest.TestCase):
         result = strategy.process(amount)
         self.assertEqual(result["status"], "pending")
 
+    def test_payment_strategy_factory(self):
+        strategy = PaymentStrategyFactory.get_strategy(" EFECTIVO ")
+        self.assertIsInstance(strategy, CashPaymentStrategy)
+        self.assertIn("pendiente", PaymentStrategyFactory.get_available_payment_states())
+
+        with self.assertRaises(ValueError):
+            PaymentStrategyFactory.get_strategy("")
+
 class TestObserver(unittest.TestCase):
     def test_observer_notification(self):
         class MockObserver(Observer):
@@ -64,6 +72,28 @@ class TestObserver(unittest.TestCase):
         
         self.assertTrue(observer.notified)
         self.assertEqual(observer.last_event.event_type, "test_event")
+        self.assertEqual(observer.last_event.data, {"key": "value"})
+
+    def test_observer_detach(self):
+        class MockObserver(Observer):
+            def __init__(self):
+                self.notified = False
+                self.last_event = None
+
+            def update(self, event):
+                self.notified = True
+                self.last_event = event
+
+        subject = EventSubject()
+        observer = MockObserver()
+        subject.attach(observer)
+        subject.detach(observer)
+
+        event = Event("test_event", {"key": "value"})
+        subject.notify(event)
+
+        self.assertFalse(observer.notified)
+
 
 class TestComposite(unittest.TestCase):
     def test_composite_duration_and_cost(self):

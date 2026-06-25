@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from Backend.database.dbconnections_opt import get_db
@@ -66,12 +65,6 @@ async def actualizar_paciente(paciente_id: int, paciente_in: PacienteUpdate, db:
         raise HTTPException(status_code=404, detail="Paciente no encontrado.")
 
     # Actualizar campos solo si se enviaron
-    if paciente_in.dni is not None:
-        paciente.dni = paciente_in.dni
-    if paciente_in.nombre is not None:
-        paciente.nombre = paciente_in.nombre
-    if paciente_in.apellido is not None:
-        paciente.apellido = paciente_in.apellido
     if paciente_in.telefono is not None:
         paciente.telefono = paciente_in.telefono
     if paciente_in.email is not None:

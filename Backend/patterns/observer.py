@@ -4,14 +4,14 @@ Define una dependencia de uno-a-muchos entre objetos
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List,Mapping
 from datetime import datetime
 
 
 class Event:
     """Representa un evento en el sistema"""
 
-    def __init__(self, event_type: str, data: dict):
+    def __init__(self, event_type: str, data: Mapping[str, object]):
         self.event_type = event_type
         self.data = data
         self.timestamp = datetime.now()

@@ -35,13 +35,13 @@ class Venta(Base):
     orden_trabajo = relationship("OrdenTrabajo", back_populates="venta", uselist=False, cascade="all, delete-orphan")
     items = relationship("DetalleVenta", back_populates="venta", cascade="all, delete-orphan")
 
-    def get_payment_strategy(self):
+    def get_payment_strategy(self, metodo_pago: str):
         """Obtiene estrategia de pago según método"""
-        return PaymentStrategyFactory.get_strategy(self.estado_pago)
+        return PaymentStrategyFactory.get_strategy(metodo_pago)
 
-    def procesar_pago(self, payment_data: dict) -> dict:
+    def procesar_pago(self, metodo_pago: str, payment_data: dict) -> dict:
         """Procesa pago usando estrategia"""
-        strategy = self.get_payment_strategy()
+        strategy = self.get_payment_strategy(metodo_pago)
 
         if not strategy.validate(payment_data):
             raise ValueError("Datos de pago inválidos")

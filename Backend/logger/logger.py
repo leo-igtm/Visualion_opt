@@ -4,6 +4,7 @@ Gestiona logs centralizados en la aplicación
 """
 
 import logging
+from pathlib import Path
 from Backend.patterns.singleton import Singleton
 from Backend.constants import LogConstants
 
@@ -20,7 +21,12 @@ class LoggerManager(Singleton):
             self.logger.setLevel(LogConstants.LOG_LEVEL)
 
             # File handler
-            fh = logging.FileHandler(LogConstants.LOG_FILE)
+            log_file = Path(LogConstants.LOG_FILE)
+            if not log_file.is_absolute():
+                log_file = Path(__file__).resolve().parents[1] / log_file
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+
+            fh = logging.FileHandler(log_file)
             fh.setLevel(logging.DEBUG)
 
             # Console handler

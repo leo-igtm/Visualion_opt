@@ -1,22 +1,38 @@
 """
-Orden Service - Gestiona órdenes usando Composite Pattern
+Orden Service - gestiona ordenes usando Composite Pattern.
 """
 
-from Backend.patterns.composite import OrdenCompuesta, EtapaOtrabajo
+from typing import ClassVar, NotRequired, TypedDict
+
 from Backend.constants import TallerConstants
+from Backend.patterns.composite import EtapaOtrabajo, OrdenCompuesta
+
+
+class EtapaOrdenData(TypedDict):
+    nombre: str
+    duracion_horas: NotRequired[float]
+    costo: NotRequired[float]
+
+
+class OrdenResumen(TypedDict):
+    numero_orden: str
+    cantidad_etapas: int
+    duracion_horas: float
+    costo_total: float
+    fecha_creacion: str
+    descripcion: str
 
 
 class OrdenService:
-    """Servicio para crear y calcular órdenes de trabajo"""
+    """Servicio para crear y calcular ordenes de trabajo."""
 
-    # Tiempos y costos estándar por etapa
-    TIEMPOS_ETAPAS = {
-        "biselado": TallerConstants.TIEMPO_BISELADO,
-        "montaje": TallerConstants.TIEMPO_MONTAJE,
-        "control_calidad": TallerConstants.TIEMPO_QC,
+    TIEMPOS_ETAPAS: ClassVar[dict[str, float]] = {
+        "biselado": float(TallerConstants.TIEMPO_BISELADO),
+        "montaje": float(TallerConstants.TIEMPO_MONTAJE),
+        "control_calidad": float(TallerConstants.TIEMPO_QC),
     }
 
-    COSTOS_ETAPAS = {
+    COSTOS_ETAPAS: ClassVar[dict[str, float]] = {
         "biselado": 150.00,
         "montaje": 100.00,
         "control_calidad": 50.00,
@@ -24,47 +40,63 @@ class OrdenService:
 
     @classmethod
     def crear_orden_estandar(cls, numero_orden: str) -> OrdenCompuesta:
-        """Crea una orden estándar con las tres etapas"""
+        """Crea una orden estandar con las tres etapas."""
+        cls._validar_numero_orden(numero_orden)
         orden = OrdenCompuesta(numero_orden)
 
-        orden.agregar_etapa(EtapaOtrabajo(
-            nombre="Biselado",
-            duracion_horas=cls.TIEMPOS_ETAPAS["biselado"],
-            costo=cls.COSTOS_ETAPAS["biselado"]
-        ))
-
-        orden.agregar_etapa(EtapaOtrabajo(
-            nombre="Montaje",
-            duracion_horas=cls.TIEMPOS_ETAPAS["montaje"],
-            costo=cls.COSTOS_ETAPAS["montaje"]
-        ))
-
-        orden.agregar_etapa(EtapaOtrabajo(
-            nombre="Control de Calidad",
-            duracion_horas=cls.TIEMPOS_ETAPAS["control_calidad"],
-            costo=cls.COSTOS_ETAPAS["control_calidad"]
-        ))
+        for clave, nombre in (
+            ("biselado", "Biselado"),
+            ("montaje", "Montaje"),
+            ("control_calidad", "Control de Calidad"),
+        ):
+            orden.agregar_etapa(
+                EtapaOtrabajo(
+                    nombre=nombre,
+                    duracion_horas=cls.TIEMPOS_ETAPAS[clave],
+                    costo=cls.COSTOS_ETAPAS[clave],
+                )
+            )
 
         return orden
 
     @classmethod
-    def crear_orden_personalizada(cls, numero_orden: str, etapas: list[dict]) -> OrdenCompuesta:
-        """Crea una orden personalizada"""
+    def crear_orden_personalizada(
+        cls,
+        numero_orden: str,
+        etapas: list[EtapaOrdenData],
+    ) -> OrdenCompuesta:
+        """Crea una orden personalizada."""
+        cls._validar_numero_orden(numero_orden)
+        if not etapas:
+            raise ValueError("La orden debe incluir al menos una etapa")
+
         orden = OrdenCompuesta(numero_orden)
 
         for etapa_data in etapas:
-            etapa = EtapaOtrabajo(
-                nombre=etapa_data["nombre"],
-                duracion_horas=etapa_data.get("duracion_horas", 1.0),
-                costo=etapa_data.get("costo", 0.0)
+            nombre = etapa_data.get("nombre")
+            if not nombre or not nombre.strip():
+                raise ValueError("Cada etapa debe incluir un nombre")
+
+            duracion_horas = float(etapa_data.get("duracion_horas", 1.0))
+            costo = float(etapa_data.get("costo", 0.0))
+            if duracion_horas <= 0:
+                raise ValueError("La duracion de una etapa debe ser mayor a cero")
+            if costo < 0:
+                raise ValueError("El costo de una etapa no puede ser negativo")
+
+            orden.agregar_etapa(
+                EtapaOtrabajo(
+                    nombre=nombre.strip(),
+                    duracion_horas=duracion_horas,
+                    costo=costo,
+                )
             )
-            orden.agregar_etapa(etapa)
 
         return orden
 
     @classmethod
-    def calcular_resumen(cls, orden: OrdenCompuesta) -> dict:
-        """Calcula resumen de la orden"""
+    def calcular_resumen(cls, orden: OrdenCompuesta) -> OrdenResumen:
+        """Calcula resumen de la orden."""
         duracion = orden.obtener_duracion_estimada()
         horas = duracion.total_seconds() / 3600
 
@@ -74,5 +106,10 @@ class OrdenService:
             "duracion_horas": round(horas, 2),
             "costo_total": round(orden.obtener_costo(), 2),
             "fecha_creacion": orden.created_at.isoformat(),
-            "descripcion": orden.obtener_descripcion()
+            "descripcion": orden.obtener_descripcion(),
         }
+
+    @staticmethod
+    def _validar_numero_orden(numero_orden: str) -> None:
+        if not numero_orden or not numero_orden.strip():
+            raise ValueError("El numero de orden es requerido")

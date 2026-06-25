@@ -1,5 +1,5 @@
 // services/authService.ts
-import { API } from "./api";
+import { API, API_BASE, APIError } from "./api";
 
 export interface AuthResponse {
   access_token: string;
@@ -40,10 +40,24 @@ export interface EmpleadoRegister {
 
 export const authService = {
   async login(usuario: string, contraseña: string): Promise<AuthResponse> {
-    return API.POST<AuthResponse>("/auth/login", {
-      usuario,
-      contraseña,
+    const formData = new URLSearchParams();
+    formData.append('username', usuario);
+    formData.append('password', contraseña);
+
+    const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new APIError(response.status, errorData.detail || "Error en la solicitud");
+    }
+
+    return response.json();
   },
 
   async register(userData: EmpleadoRegister): Promise<Empleado> {

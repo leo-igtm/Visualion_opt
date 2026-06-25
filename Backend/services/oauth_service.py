@@ -1,14 +1,25 @@
 """
-OAuth2 Service para autenticación con servicios externos
+OAuth2 service para autenticacion con servicios externos.
 """
 
 import os
+from typing import TypedDict
+from urllib.parse import urlencode
+
 import httpx
-from typing import Optional, Dict
+
+
+class OAuthUserInfo(TypedDict, total=False):
+    email: str | None
+    name: str | None
+    picture: str | None
+    avatar_url: str | None
+    username: str | None
+    provider: str
 
 
 class GoogleOAuthService:
-    """Google OAuth2 Service"""
+    """Google OAuth2 service."""
 
     CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
     CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -16,20 +27,23 @@ class GoogleOAuthService:
 
     @staticmethod
     def get_auth_url() -> str:
-        """Retorna URL para autenticar"""
-        return (
-            f"https://accounts.google.com/o/oauth2/v2/auth?"
-            f"client_id={GoogleOAuthService.CLIENT_ID}&"
-            f"redirect_uri={GoogleOAuthService.REDIRECT_URI}&"
-            f"response_type=code&"
-            f"scope=openid%20email%20profile"
-        )
+        """Retorna URL para autenticar."""
+        params = {
+            "client_id": GoogleOAuthService.CLIENT_ID or "",
+            "redirect_uri": GoogleOAuthService.REDIRECT_URI,
+            "response_type": "code",
+            "scope": "openid email profile",
+        }
+        return f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
 
     @staticmethod
-    async def verify_token(code: str) -> Optional[Dict]:
-        """Verifica código y obtiene info del usuario"""
+    async def verify_token(code: str) -> OAuthUserInfo | None:
+        """Verifica codigo y obtiene informacion del usuario."""
+        if not GoogleOAuthService.CLIENT_ID or not GoogleOAuthService.CLIENT_SECRET:
+            return None
+
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
                     "https://oauth2.googleapis.com/token",
                     data={
@@ -37,40 +51,38 @@ class GoogleOAuthService:
                         "client_secret": GoogleOAuthService.CLIENT_SECRET,
                         "code": code,
                         "grant_type": "authorization_code",
-                        "redirect_uri": GoogleOAuthService.REDIRECT_URI
-                    }
+                        "redirect_uri": GoogleOAuthService.REDIRECT_URI,
+                    },
                 )
 
                 if response.status_code != 200:
                     return None
 
-                data = response.json()
-                access_token = data.get("access_token")
+                access_token = response.json().get("access_token")
+                if not access_token:
+                    return None
 
-                # Obtener info del usuario
                 user_response = await client.get(
                     "https://www.googleapis.com/oauth2/v1/userinfo",
-                    headers={"Authorization": f"Bearer {access_token}"}
+                    headers={"Authorization": f"Bearer {access_token}"},
                 )
 
                 if user_response.status_code != 200:
                     return None
 
                 user_data = user_response.json()
-
                 return {
                     "email": user_data.get("email"),
                     "name": user_data.get("name"),
                     "picture": user_data.get("picture"),
-                    "provider": "google"
+                    "provider": "google",
                 }
-        except Exception as e:
-            print(f"Error in Google OAuth: {e}")
+        except httpx.HTTPError:
             return None
 
 
 class GitHubOAuthService:
-    """GitHub OAuth2 Service"""
+    """GitHub OAuth2 service."""
 
     CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
     CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
@@ -78,20 +90,22 @@ class GitHubOAuthService:
 
     @staticmethod
     def get_auth_url() -> str:
-        """Retorna URL para autenticar"""
-        return (
-            f"https://github.com/login/oauth/authorize?"
-            f"client_id={GitHubOAuthService.CLIENT_ID}&"
-            f"redirect_uri={GitHubOAuthService.REDIRECT_URI}&"
-            f"scope=user:email"
-        )
+        """Retorna URL para autenticar."""
+        params = {
+            "client_id": GitHubOAuthService.CLIENT_ID or "",
+            "redirect_uri": GitHubOAuthService.REDIRECT_URI,
+            "scope": "user:email",
+        }
+        return f"https://github.com/login/oauth/authorize?{urlencode(params)}"
 
     @staticmethod
-    async def verify_token(code: str) -> Optional[Dict]:
-        """Verifica código y obtiene info del usuario"""
+    async def verify_token(code: str) -> OAuthUserInfo | None:
+        """Verifica codigo y obtiene informacion del usuario."""
+        if not GitHubOAuthService.CLIENT_ID or not GitHubOAuthService.CLIENT_SECRET:
+            return None
+
         try:
-            async with httpx.AsyncClient() as client:
-                # Obtener access token
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(
                     "https://github.com/login/oauth/access_token",
                     data={
@@ -99,48 +113,42 @@ class GitHubOAuthService:
                         "client_secret": GitHubOAuthService.CLIENT_SECRET,
                         "code": code,
                     },
-                    headers={"Accept": "application/json"}
+                    headers={"Accept": "application/json"},
                 )
 
                 if response.status_code != 200:
                     return None
 
-                token_data = response.json()
-                access_token = token_data.get("access_token")
-
+                access_token = response.json().get("access_token")
                 if not access_token:
                     return None
 
-                # Obtener info del usuario
                 user_response = await client.get(
                     "https://api.github.com/user",
-                    headers={"Authorization": f"Bearer {access_token}"}
+                    headers={"Authorization": f"Bearer {access_token}"},
                 )
 
                 if user_response.status_code != 200:
                     return None
 
                 user_data = user_response.json()
+                email = user_data.get("email")
 
-                # Obtener email
                 email_response = await client.get(
                     "https://api.github.com/user/emails",
-                    headers={"Authorization": f"Bearer {access_token}"}
+                    headers={"Authorization": f"Bearer {access_token}"},
                 )
-
-                email = None
                 if email_response.status_code == 200:
                     emails = email_response.json()
-                    primary_email = next((e for e in emails if e.get("primary")), None)
-                    email = primary_email.get("email") if primary_email else None
+                    primary_email = next((item for item in emails if item.get("primary")), None)
+                    email = primary_email.get("email") if primary_email else email
 
                 return {
-                    "email": email or user_data.get("email"),
+                    "email": email,
                     "name": user_data.get("name"),
                     "avatar_url": user_data.get("avatar_url"),
                     "username": user_data.get("login"),
-                    "provider": "github"
+                    "provider": "github",
                 }
-        except Exception as e:
-            print(f"Error in GitHub OAuth: {e}")
+        except httpx.HTTPError:
             return None
