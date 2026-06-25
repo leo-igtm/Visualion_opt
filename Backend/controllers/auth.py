@@ -6,7 +6,7 @@ from typing import Annotated
 
 from Backend.database.dbconnections_opt import get_db
 from Backend.Schemas import empleado as schemas_empleado
-from Backend.Models.Usuarios import Empleado
+from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor, Paciente
 from Backend.services.auth_service import AuthService
 
 router = APIRouter(
@@ -16,26 +16,41 @@ router = APIRouter(
 
 @router.post("/register", response_model=schemas_empleado.EmpleadoResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
-    user_data: schemas_empleado.PacienteRegister, 
+    user_data: schemas_empleado.EmpleadoCreate, 
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Registro público para nuevos usuarios. Se crea un Empleado con rol 'paciente'.
+    Registro para nuevos empleados/usuarios con roles.
+    Este endpoint es usado para poblar la base de datos (seeding).
     """
     result = await db.execute(select(Empleado).where(Empleado.email == user_data.email))
     if result.scalars().first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail=f"Email '{user_data.email}' already registered")
+
+    result = await db.execute(select(Empleado).where(Empleado.usuario == user_data.usuario))
+    if result.scalars().first():
+        raise HTTPException(status_code=400, detail=f"Username '{user_data.usuario}' already registered")
 
     hashed_password = AuthService.hash_password(user_data.password)
     
-    # El modelo polimórfico Empleado requiere legajo y usuario.
-    # Usamos el email como usuario y generamos un legajo simple.
-    new_user = Empleado(
-        **user_data.model_dump(exclude={"password"}),
-        hashed_password=hashed_password,
-        usuario=user_data.email, # Usamos email como nombre de usuario
-        legajo=f"P-{user_data.dni}", # Generamos un legajo único para el paciente
-        rol="paciente"
+    user_data_dict = user_data.model_dump(exclude={"password"})
+    
+    # Determinar la clase del modelo polimórfico a instanciar
+    role_class_map = {
+        "medico": Medico,
+        "tecnico": Tecnico,
+        "vendedor": Vendedor,
+        "empleado": Empleado,
+        "paciente": Paciente
+    }
+    
+    # Usar Empleado como default si el rol no está en el mapa
+    ModelClass = role_class_map.get(user_data.rol, Empleado)
+    
+    # Crear la instancia del usuario
+    new_user = ModelClass(
+        **user_data_dict,
+        hashed_password=hashed_password
     )
 
     db.add(new_user)

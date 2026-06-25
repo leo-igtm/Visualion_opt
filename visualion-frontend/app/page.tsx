@@ -18,17 +18,17 @@ export default function HomePage() {
   // Módulos para el público y pacientes (no autenticados)
   const publicModules = [
     {
-      title: '📅 Gestionar Mis Turnos',
-      description: 'Consulta, agenda o cancela tus citas médicas de forma rápida y sencilla.',
-      icon: '📅',
-      href: '/portal/turnos', // Ruta para pacientes
+      title: '🏥 Portal de Clínica',
+      description: 'Consulta, agenda o cancela tus citas médicas y revisa tu historial.',
+      icon: '🏥',
+      href: '/portal/clinica', // Nueva ruta para el portal de clínica
       color: 'blue' as const,
     },
     {
-      title: '👓 Catálogo de Productos',
-      description: 'Explora nuestra variedad de armazones, lentes de contacto y accesorios.',
+      title: '👓 Portal de Óptica',
+      description: 'Explora el catálogo de productos y sigue el estado de tu pedido.',
       icon: '👓',
-      href: '/catalogo', // Ruta pública del catálogo
+      href: '/portal/optica', // Nueva ruta para el portal de óptica
       color: 'green' as const,
     },
   ];

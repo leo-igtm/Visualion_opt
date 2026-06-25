@@ -35,7 +35,7 @@ async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(
         raise HTTPException(status_code=400, detail=f"Estado de pago no soportado: {venta_in.estado_pago}")
 
     nueva_venta = models.Venta(
-        numeroComprobante=venta_in.numeroComprobante,
+        numeroComprobante=venta_in.numero_comprobante,
         estado_pago=venta_in.estado_pago,
         total=0.0,
         paciente_id=venta_in.paciente_id,

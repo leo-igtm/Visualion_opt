@@ -7,19 +7,24 @@ from Backend.controllers.optica import router as optica_router
 from Backend.controllers.taller import router as taller_router
 from fastapi.middleware.cors import CORSMiddleware
 from Backend.logger.logger import logger_manager
+from contextlib import asynccontextmanager
 
 logger = logger_manager.get_logger()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Iniciando aplicación Visualion API")
+    yield
+    # Shutdown
+    logger.info("Cerrando aplicación Visualion API")
 
 '''Inicialización de la aplicación FastAPI'''
 '''Se crean los routers para cada módulo y se agregan a la aplicación.'''
 app = FastAPI(
     title="Visualion API backend ",
+    lifespan=lifespan
 )
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Iniciando aplicación Visualion API")
-
 
 app.include_router(auth_router)
 app.include_router(users_router)

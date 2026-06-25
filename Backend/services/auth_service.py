@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from Backend.constants import AuthConstants
 from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor
-from Backend.Schemas.empleado import EmpleadoRegister
+from Backend.Schemas.empleado import EmpleadoCreate
 from Backend.sanitizers.data_sanitizer import DataSanitizer
 
 SECRET_KEY: str = os.getenv("SECRET_KEY", "visualion_secret_key_2024_change_in_production")
@@ -78,17 +78,17 @@ class AuthService:
         result = await db.execute(query)
         user = result.scalar_one_or_none()
 
-        if not user or not AuthService.verify_password(password, user.contraseña):
+        if not user or not AuthService.verify_password(password, user.hashed_password):
             raise ValueError("Credenciales invalidas")
 
-        if not (user.contraseña.startswith("$2b$") or user.contraseña.startswith("$2a$")):
-            user.contraseña = AuthService.hash_password(password)
+        if not (user.hashed_password.startswith("$2b$") or user.hashed_password.startswith("$2a$")):
+            user.hashed_password = AuthService.hash_password(password)
             await db.commit()
 
         return AuthService.create_user_access_token(user)
 
     @staticmethod
-    async def register_user(db: AsyncSession, user_data: EmpleadoRegister) -> Empleado:
+    async def register_user(db: AsyncSession, user_data: EmpleadoCreate) -> Empleado:
         """Registra nuevo usuario con sanitizacion y crea el subclass correcto segun rol."""
         data_dict = user_data.model_dump()
 
@@ -103,7 +103,7 @@ class AuthService:
         if data_dict.get("dni"):
             data_dict["dni"] = DataSanitizer.sanitize_dni(data_dict["dni"])
 
-        hashed_pw = AuthService.hash_password(data_dict["contraseña"])
+        hashed_pw = AuthService.hash_password(user_data.password) # Use user_data.password
         rol = data_dict.get("rol", "empleado")
 
         if rol == "medico":
@@ -114,7 +114,7 @@ class AuthService:
                 telefono=data_dict.get("telefono"),
                 email=data_dict.get("email"),
                 usuario=data_dict["usuario"],
-                contraseña=hashed_pw,
+                hashed_password=hashed_pw, # Use hashed_password
                 rol="medico",
                 legajo=data_dict["legajo"],
                 matricula=data_dict.get("matricula") or "",
@@ -128,7 +128,7 @@ class AuthService:
                 telefono=data_dict.get("telefono"),
                 email=data_dict.get("email"),
                 usuario=data_dict["usuario"],
-                contraseña=hashed_pw,
+                hashed_password=hashed_pw, # Use hashed_password
                 rol="tecnico",
                 legajo=data_dict["legajo"],
                 matricula_optico=data_dict.get("matricula_optico") or "",
@@ -141,12 +141,12 @@ class AuthService:
                 telefono=data_dict.get("telefono"),
                 email=data_dict.get("email"),
                 usuario=data_dict["usuario"],
-                contraseña=hashed_pw,
+                hashed_password=hashed_pw, # Use hashed_password
                 rol="vendedor",
                 legajo=data_dict["legajo"],
                 comisiones=data_dict.get("comisiones") or 0.0,
             )
-        else:
+        else: # Default to Empleado
             user = Empleado(
                 dni=data_dict["dni"],
                 nombre=data_dict["nombre"],
@@ -154,7 +154,7 @@ class AuthService:
                 telefono=data_dict.get("telefono"),
                 email=data_dict.get("email"),
                 usuario=data_dict["usuario"],
-                contraseña=hashed_pw,
+                hashed_password=hashed_pw, # Use hashed_password
                 rol=rol,
                 legajo=data_dict["legajo"],
             )

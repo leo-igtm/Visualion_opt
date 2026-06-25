@@ -16,7 +16,7 @@ class Persona(Base):
     apellido: Mapped[str] = mapped_column(String(100))
     telefono: Mapped[str | None] = mapped_column(String(50))
     email: Mapped[str | None] = mapped_column(String(100))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # El discriminador maestro que le dice a SQLAlchemy quién es quién
     tipo_persona: Mapped[str] = mapped_column(String(50))
@@ -56,7 +56,7 @@ class Empleado(Persona):
     
     legajo: Mapped[str] = mapped_column(String(50), unique=True)
     usuario: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String(255))
+    contraseña: Mapped[str] = mapped_column(String(255))
     rol: Mapped[str] = mapped_column(String(50)) # "medico", "tecnico", "vendedor"
 
     __mapper_args__ = {
