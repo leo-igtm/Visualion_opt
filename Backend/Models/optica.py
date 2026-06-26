@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
+from Backend.Models.clinica import RecetaMedica
 
 
 class Producto(Base):
@@ -48,7 +49,7 @@ class Venta(Base):
 
     paciente = relationship("Paciente", back_populates="ventas")
     vendedor = relationship("Vendedor", back_populates="ventas")
-    receta = relationship("RecetaMedica", back_populates="venta")
+    receta: Mapped["RecetaMedica"] = relationship("RecetaMedica", back_populates="ventas")
     detalles = relationship("DetalleVenta", back_populates="venta")
     orden_trabajo = relationship("OrdenTrabajo", back_populates="venta", uselist=False)
 
@@ -63,35 +64,6 @@ class DetalleVenta(Base):
 
     venta = relationship("Venta", back_populates="detalles")
     producto = relationship("Producto", back_populates="detalles_venta")
-
-
-class Turno(Base):
-    __tablename__ = "turnos"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    fecha_hora: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    motivo: Mapped[str] = mapped_column(String(255), nullable=False)
-    estado: Mapped[str] = mapped_column(String(50), nullable=False)
-    paciente_id: Mapped[int] = mapped_column(ForeignKey("pacientes.id"), nullable=False)
-    medico_id: Mapped[int] = mapped_column(ForeignKey("medicos.id"), nullable=False)
-
-    paciente = relationship("Paciente", back_populates="turnos")
-    medico = relationship("Medico", back_populates="turnos")
-    receta = relationship("RecetaMedica", back_populates="turno", uselist=False)
-
-
-class RecetaMedica(Base):
-    __tablename__ = "recetas"
-    uuid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    turno_id: Mapped[int] = mapped_column(ForeignKey("turnos.id"), nullable=False)
-    paciente_id: Mapped[int] = mapped_column(ForeignKey("pacientes.id"), nullable=False)
-    medico_id: Mapped[int] = mapped_column(ForeignKey("medicos.id"), nullable=False)
-    # ... (resto de campos de la receta)
-
-    turno = relationship("Turno", back_populates="receta")
-    paciente = relationship("Paciente", back_populates="recetas")
-    medico = relationship("Medico", back_populates="recetas")
-    venta = relationship("Venta", back_populates="receta")
-
 
 class EstadoOrden(str, enum.Enum):
     RECIBIDA = "recibida"

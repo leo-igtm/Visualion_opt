@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from Backend.controllers.auth import router as auth_router
+from Backend.controllers.auth_controller import router as auth_router
 from Backend.controllers.users import router as users_router
 from Backend.controllers.paciente import router as paciente_router
 from Backend.controllers.clinica import router as clinica_router

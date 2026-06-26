@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Type, Union
 from sqlalchemy.exc import IntegrityError
+from psycopg.errors import UniqueViolation
 
 from Backend.database.dbconnections_opt import get_db
-from Backend.Schemas import empleado as schemas_empleado
-from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor
+from Backend.Schemas.empleado import EmpleadoResponse, PacienteCreate, PacienteResponse, UserCreate
+from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor, Paciente, Persona
 from Backend.dependencies import get_current_active_admin_user
-from Backend.services.auth_service import AuthService
+from Backend.Core.security import get_password_hash
 
 router = APIRouter(
     prefix="/users",
@@ -16,86 +17,83 @@ router = APIRouter(
     dependencies=[Depends(get_current_active_admin_user)] # Protege todas las rutas de este router
 )
 
-#crear empleados medico,tecnico,vendedor
+#crear empleados medico,tecnico,vendedor y pacientes
 
-@router.post("/create-employee", response_model=schemas_empleado.EmpleadoResponse, status_code=status.HTTP_201_CREATED)
-async def create_employee(
-    employee_data: schemas_empleado.EmpleadoCreate,
+UserModelType = Union[Type[Empleado], Type[Medico], Type[Tecnico], Type[Vendedor], Type[Paciente]]
+
+@router.post("/create", response_model=Union[EmpleadoResponse, PacienteResponse], status_code=status.HTTP_201_CREATED)
+async def create_user(
+    # Usamos la Union Discriminada. FastAPI usará el campo 'rol' para validar el schema correcto.
+    user_data: UserCreate = Body(..., discriminator="rol"),
     db: AsyncSession = Depends(get_db)
-) -> schemas_empleado.EmpleadoResponse: # Add return type hint
+) -> Persona:
     """
-    Endpoint solo para administradores para crear un nuevo empleado con un rol específico.
-    Este endpoint es robusto: valida y selecciona los campos adecuados según el rol.
+    Endpoint solo para administradores para crear un nuevo usuario con un rol específico.
+    Gracias a los esquemas Pydantic, la validación de campos por rol es automática.
+    Puede crear: Paciente, Medico, Vendedor, Tecnico, Admin.
     """
-    result = await db.execute(select(Empleado).where(Empleado.usuario == employee_data.usuario))
-    if result.scalars().first():
-        raise HTTPException(status_code=400, detail="El nombre de usuario ya está registrado")
+    # 1. Lógica para crear un Paciente
+    if isinstance(user_data, PacienteCreate):
+        # Verificamos si ya existe un paciente con el mismo DNI
+        existing_paciente = await db.execute(select(Paciente).where(Paciente.dni == user_data.dni))
+        if existing_paciente.scalars().first():
+            raise HTTPException(status_code=409, detail="Ya existe un paciente con este DNI.")
+        
+        # Creamos la instancia del modelo Paciente
+        new_user = Paciente(**user_data.model_dump())
 
-    allowed_roles = {"medico", "vendedor", "tecnico", "admin"}
-    if employee_data.rol not in allowed_roles:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Rol no válido. Roles permitidos: {', '.join(allowed_roles)}"
+    # 2. Lógica para crear cualquier tipo de Empleado
+    else:
+        # Verificamos si ya existe un empleado con el mismo usuario o DNI
+        existing_empleado = await db.execute(
+            select(Empleado).where(
+                (Empleado.usuario == user_data.usuario) | (Empleado.dni == user_data.dni)
+            )
         )
+        if existing_empleado.scalars().first():
+            raise HTTPException(status_code=409, detail="Ya existe un empleado con este usuario o DNI.")
 
-    hashed_password = AuthService.hash_password(employee_data.password)
+        # Hasheamos la contraseña antes de guardarla
+        hashed_password = get_password_hash(user_data.password)
+        
+        # Preparamos los datos para el modelo SQLAlchemy
+        model_data = user_data.model_dump(exclude={"password"})
+        model_data['contraseña'] = hashed_password
 
-    # Define a type alias for the employee model classes
-    EmployeeModelType = Union[Type[Empleado], Type[Medico], Type[Tecnico], Type[Vendedor]]
+        # Mapeamos el rol del schema al modelo SQLAlchemy correspondiente
+        rol_class_map: dict[str, UserModelType] = {
+            "medico": Medico,
+            "tecnico": Tecnico,
+            "vendedor": Vendedor,
+            "admin": Empleado,
+        }
+        UserClass = rol_class_map[user_data.rol]
+        
+        # Creamos la instancia del modelo de Empleado (o subclase)
+        new_user = UserClass(**model_data)
 
-    # Preparamos los datos del empleado. El campo 'rol' se obtiene directamente
-    # del model_dump() y ya no se excluye.
-    employee_model_data = employee_data.model_dump(
-        exclude={"password", "matricula", "especialidad", "matricula_optico", "comisiones"}
-    )
-    employee_model_data['contraseña'] = hashed_password
-
-    rol_class_map: dict[str, EmployeeModelType] = { # Add type hint
-        "medico": Medico,
-        "tecnico": Tecnico,
-        "vendedor": Vendedor,
-        "admin": Empleado,
-    }
-    EmpleadoClass: EmployeeModelType = rol_class_map[employee_data.rol] # Add type hint
-
-    # Añadimos los campos específicos del rol y validamos su presencia
-    if employee_data.rol == "medico":
-        if employee_data.matricula is None or employee_data.especialidad is None:
-            raise HTTPException(status_code=400, detail="El rol 'medico' requiere 'matricula' y 'especialidad'.")
-        employee_model_data["matricula"] = employee_data.matricula
-        employee_model_data["especialidad"] = employee_data.especialidad
-    elif employee_data.rol == "tecnico":
-        if employee_data.matricula_optico is None:
-            raise HTTPException(status_code=400, detail="El rol 'tecnico' requiere 'matricula_optico'.")
-        employee_model_data["matricula_optico"] = employee_data.matricula_optico
-    elif employee_data.rol == "vendedor":
-        if employee_data.comisiones is not None:
-            employee_model_data["comisiones"] = employee_data.comisiones
-    # Para 'admin', no se necesitan campos adicionales. 'rol' ya está incluido.
-
-    # Creamos la instancia de forma segura
+    # 3. Guardamos en la base de datos y manejamos errores
     try:
-        new_employee: Empleado = EmpleadoClass(**employee_model_data) # Add type hint
-        db.add(new_employee)
+        db.add(new_user)
         await db.commit()
-        await db.refresh(new_employee)
+        await db.refresh(new_user)
     except IntegrityError as e:
-        await db.rollback() # Important to rollback on error
+        await db.rollback()
+        # Capturamos violaciones de unicidad (ej. DNI, usuario)
+        if isinstance(e.orig, UniqueViolation):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Conflicto de datos: un campo único ya existe. Detalle: {e.orig.diag.message_detail}"
+            )
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, # 409 Conflict for integrity errors
-            detail=f"Error de integridad de datos: {e.orig.pgerror if hasattr(e.orig, 'pgerror') else e.orig}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error de integridad no manejado: {e.orig}"
         )
-    except TypeError as e:
-        await db.rollback() # Rollback in case of type error before commit
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error de tipo al crear empleado. Verifique los campos: {e}"
-        )
-    except Exception as e: # Catch all other unexpected errors
+    except Exception as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error interno del servidor al crear empleado: {e}"
+            detail=f"Error interno del servidor al crear usuario: {e}"
         )
-    
-    return new_employee
+
+    return new_user

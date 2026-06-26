@@ -1,106 +1,68 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Any
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import Annotated, Union, Type
 
 from Backend.database.dbconnections_opt import get_db
-from Backend.Schemas import empleado as schemas_empleado
-from Backend.Models.Usuarios import Persona, Empleado, Medico, Tecnico, Vendedor, Paciente
-from Backend.services.auth_service import AuthService
+from Backend.Models.Usuarios import Empleado
+from Backend.Schemas.empleado import TokenData
+from .config import settings
+from .security import verify_password
 
-router = APIRouter(
-    prefix="/auth",
-    tags=["Authentication"],
-)
+# This tells FastAPI where to look for the token.
+# The tokenUrl should match the path to your login endpoint.
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-# Se usa Union en el response_model para que FastAPI pueda devolver el schema correcto
-# tanto si se crea un Empleado como un Paciente.
-@router.post("/register",
-            response_model=Union[schemas_empleado.EmpleadoResponse, schemas_empleado.PacienteResponse],
-            status_code=status.HTTP_201_CREATED)
-async def register_user(
-    user_data: schemas_empleado.EmpleadoCreate, 
-    db: AsyncSession = Depends(get_db)
-) -> Union[schemas_empleado.EmpleadoResponse, schemas_empleado.PacienteResponse]:
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[Empleado]:
     """
-    Registro para nuevos empleados/usuarios con roles.
-    Este endpoint es usado para poblar la base de datos (seeding).
+    Authenticates a user by checking the database.
     """
-    result = await db.execute(select(Persona).where(Persona.email == user_data.email))
-    if result.scalars().first():
-        raise HTTPException(status_code=400, detail=f"Email '{user_data.email}' already registered")
-
-    result = await db.execute(select(Persona).where(Persona.usuario == user_data.usuario))
-    if result.scalars().first():
-        raise HTTPException(status_code=400, detail=f"Username '{user_data.usuario}' already registered")
-
-    hashed_password = AuthService.hash_password(user_data.password)
-        
-    # Determinar la clase del modelo polimórfico a instanciar
-    role_class_map: dict[str, Type[Persona]] = {
-        "medico": Medico,
-        "tecnico": Tecnico,
-        "vendedor": Vendedor,
-        "admin": Empleado,
-        "paciente": Paciente
-    }
-    
-    ModelClass = role_class_map.get(user_data.rol)
-    if not ModelClass:
-        raise HTTPException(status_code=400, detail=f"Role '{user_data.rol}' is not valid for registration via this endpoint.")
-
-    create_data_raw = user_data.model_dump(exclude={"password"})
-
-    # Filtra los datos para evitar TypeErrors, ya que EmpleadoCreate tiene campos para todos los roles.
-    if user_data.rol == "paciente":
-        allowed_fields = {'dni', 'nombre', 'apellido', 'telefono', 'email', 'usuario', 'obra_social', 'historial_medico'}
-        create_data = {k: v for k, v in create_data_raw.items() if k in allowed_fields}
-    else: # Para tipos de Empleado
-        # Esta es una creación simplificada. Para más detalles (ej. matrícula de médico), usar /users/create-employee
-        allowed_fields = {'dni', 'nombre', 'apellido', 'telefono', 'email', 'usuario', 'legajo', 'rol'}
-        create_data = {k: v for k, v in create_data_raw.items() if k in allowed_fields}
-    
-    # Crear la instancia del usuario
-    new_user: Persona = ModelClass(
-        **create_data,
-        contraseña=hashed_password
-    )
-
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-    
-    # Pydantic V2 usa `model_validate` para crear un esquema a partir de un objeto ORM.
-    # Aunque FastAPI puede hacer esta conversión implícitamente gracias al decorador `response_model`,
-    # ser explícito aquí satisface al analizador de tipos (Pylance) y elimina la advertencia.
-    if isinstance(new_user, Paciente):
-        return schemas_empleado.PacienteResponse.model_validate(new_user)
-    else:
-        return schemas_empleado.EmpleadoResponse.model_validate(new_user)
-
-@router.post("/login", response_model=schemas_empleado.Token)
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Inicia sesión y devuelve un token de acceso JWT.
-    """
-    # Se busca en la tabla base 'Persona' para permitir login de Empleados y Pacientes.
-    result = await db.execute(select(Persona).where(Persona.usuario == form_data.username))
+    result = await db.execute(select(Empleado).where(Empleado.usuario == username))
     user = result.scalars().first()
+    if not user:
+        return None
+    if not verify_password(password, user.contraseña):
+        return None
+    return user
 
-    # Verifica que el usuario exista, que tenga el atributo contraseña y que la contraseña sea correcta.
-    if not user or not user.contraseña or not AuthService.verify_password(form_data.password, user.contraseña):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+def create_access_token(data: dict[str, Any], expires_delta: Optional[timedelta] = None):
+    """
+    Creates a new JWT access token.
+    """
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> Empleado:
+    """
+    Dependency to get the current authenticated user from a token.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str | None = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(usuario=username)
+    except JWTError:
+        raise credentials_exception
     
-    # El rol para el token se obtiene del campo 'rol' si es un Empleado, o se asigna 'paciente' si es un Paciente.
-    user_role = getattr(user, 'rol', 'paciente')
-
-    access_token = AuthService.create_access_token(data={"sub": user.usuario, "rol": user_role})
-    return {"access_token": access_token, "token_type": "bearer"}
+    result = await db.execute(select(Empleado).where(Empleado.usuario == token_data.usuario))
+    user = result.scalars().first()
+    
+    if user is None:
+        raise credentials_exception
+    return user

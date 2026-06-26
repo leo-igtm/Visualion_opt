@@ -22,27 +22,39 @@ export interface Empleado {
   comisiones?: number;
 }
 
-export interface EmpleadoRegister {
+export interface Paciente {
+  id: number;
   dni: string;
   nombre: string;
   apellido: string;
   telefono?: string;
   email?: string;
-  legajo: string;
   usuario: string;
-  contraseña: string;
+  obra_social?: string;
+}
+
+export interface UserRegister {
+  dni: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  email?: string;
+  legajo?: string;
+  usuario: string;
+  password;
   rol: string;
   matricula?: string;
   especialidad?: string;
   matricula_optico?: string;
   comisiones?: number;
+  obra_social?: string;
 }
 
 export const authService = {
-  async login(usuario: string, contraseña: string): Promise<AuthResponse> {
+  async login(usuario: string, password: string): Promise<AuthResponse> {
     const formData = new URLSearchParams();
     formData.append('username', usuario);
-    formData.append('password', contraseña);
+    formData.append('password', password);
 
     const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
@@ -60,27 +72,31 @@ export const authService = {
     return response.json();
   },
 
-  async register(userData: EmpleadoRegister): Promise<Empleado> {
-    return API.POST<Empleado>("/auth/register", userData);
+  async register(userData: UserRegister): Promise<Empleado | Paciente> {
+    return API.POST<Empleado | Paciente>("/auth/register", userData);
+  },
+  
+  async createUser(userData: UserRegister): Promise<Empleado | Paciente> {
+    return API.POST<Empleado | Paciente>("/users/create", userData);
   },
 
   async obtenerUsuarios(): Promise<Empleado[]> {
-    return API.GET<Empleado[]>("/auth/usuarios");
+    return API.GET<Empleado[]>("/users");
   },
 
   async obtenerUsuario(id: number): Promise<Empleado> {
-    return API.GET<Empleado>(`/auth/usuarios/${id}`);
+    return API.GET<Empleado>(`/users/${id}`);
   },
 
   async actualizarUsuario(
     id: number,
     userData: Partial<Empleado>
   ): Promise<Empleado> {
-    return API.PUT<Empleado>(`/auth/usuarios/${id}`, userData);
+    return API.PUT<Empleado>(`/users/${id}`, userData);
   },
 
   async eliminarUsuario(id: number): Promise<void> {
-    return API.DELETE(`/auth/usuarios/${id}`);
+    return API.DELETE(`/users/${id}`);
   },
 
   logout(): void {

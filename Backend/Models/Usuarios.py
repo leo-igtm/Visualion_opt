@@ -1,6 +1,7 @@
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
+from Backend.Models.clinica import Turno, RecetaMedica
 
 #Documentacion de estas clases 
 
@@ -17,10 +18,6 @@ class Persona(Base):
     telefono: Mapped[str | None] = mapped_column(String(50))
     email: Mapped[str | None] = mapped_column(String(100))
     # is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-    usuario: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
-    contraseña: Mapped[str | None] = mapped_column(String(255))
-
     # El discriminador maestro que le dice a SQLAlchemy quién es quién
     tipo_persona: Mapped[str] = mapped_column(String(50))
 
@@ -45,9 +42,9 @@ class Paciente(Persona):
     __mapper_args__ = {
         "polymorphic_identity": "paciente"
     }
-    turnos = relationship("Turno", back_populates="paciente")
+    turnos: Mapped[list["Turno"]] = relationship("Turno", back_populates="paciente")
     ventas = relationship("Venta", back_populates="paciente")
-    recetas = relationship("RecetaMedica", back_populates="paciente")
+    recetas: Mapped[list["RecetaMedica"]] = relationship("RecetaMedica", back_populates="paciente")
 
 class Empleado(Persona):
     '''Clase para empleados, hereda de Persona'''
@@ -59,6 +56,9 @@ class Empleado(Persona):
     
     legajo: Mapped[str] = mapped_column(String(50), unique=True)
     rol: Mapped[str] = mapped_column(String(50), nullable=False) # "medico", "tecnico", "vendedor", "admin"
+
+    usuario: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    contraseña: Mapped[str] = mapped_column(String(255))
 
     __mapper_args__ = {
         # Si creás un empleado general, usará esta identidad
@@ -80,8 +80,8 @@ class Medico(Empleado):
         "polymorphic_identity": "medico"
     }
 
-    turnos = relationship("Turno", back_populates="medico")
-    recetas = relationship("RecetaMedica", back_populates="medico")
+    turnos: Mapped[list["Turno"]] = relationship("Turno", back_populates="medico")
+    recetas: Mapped[list["RecetaMedica"]] = relationship("RecetaMedica", back_populates="medico")
 
 
 class Tecnico(Empleado):

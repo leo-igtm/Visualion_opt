@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { tallerService } from "@/service/tallerService";
-import { OrdenTrabajo } from "@/types/taller";
+import { OrdenTrabajo, ESTADOS_LABEL } from "@/types/taller";
 import { APIError } from "@/service/api";
 import EstadoOrdenBadge from "./EstadoOrdenBadge";
 import { LoadingSpinner } from "./Loading";
@@ -71,11 +71,9 @@ export default function ListaOrdenesTrabajo() {
             className="px-3 py-2 bg-gray-800 border border-gray-700 text-gray-100 rounded hover:border-indigo-500 transition-colors"
           >
             <option value="">Todos</option>
-            <option value="recibida">Recibida</option>
-            <option value="biselado">Biselado</option>
-            <option value="montaje">Montaje</option>
-            <option value="control_calidad">Control QC</option>
-            <option value="listo">Listo</option>
+            {Object.entries(ESTADOS_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </select>
         </div>
       </div>
