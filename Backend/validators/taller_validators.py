@@ -1,42 +1,31 @@
-from Backend.Models.taller import EstadoOrden, OrdenTrabajo
+from __future__ import annotations
+from typing import TYPE_CHECKING
+from Backend.Models.optica import EstadoOrden
 
+if TYPE_CHECKING:
+    from Backend.Models.optica import OrdenTrabajo
 
 class OrdenTrabajoValidator:
-    """Validator for OrdenTrabajo state machine transitions"""
+    """
+    Clase estática para validar la lógica de negocio de las Órdenes de Trabajo.
+    """
 
-    TRANSICIONES_VALIDAS = {
-        EstadoOrden.RECIBIDA: [EstadoOrden.BISELADO],
-        EstadoOrden.BISELADO: [EstadoOrden.MONTAJE],
-        EstadoOrden.MONTAJE: [EstadoOrden.CONTROL_CALIDAD],
-        EstadoOrden.CONTROL_CALIDAD: [EstadoOrden.LISTO, EstadoOrden.MONTAJE],
-        EstadoOrden.LISTO: [],
+    # Define la máquina de estados para las transiciones válidas.
+    TRANSICIONES_VALIDAS: dict[EstadoOrden, list[EstadoOrden]] = {
+        EstadoOrden.RECIBIDA: [EstadoOrden.EN_PROCESO, EstadoOrden.CANCELADA],
+        EstadoOrden.EN_PROCESO: [EstadoOrden.LISTA_PARA_ENTREGA, EstadoOrden.CANCELADA],
+        EstadoOrden.LISTA_PARA_ENTREGA: [EstadoOrden.ENTREGADA, EstadoOrden.CANCELADA],
+        EstadoOrden.ENTREGADA: [],  # Estado final
+        EstadoOrden.CANCELADA: [], # Estado final
     }
 
     @staticmethod
-    def puede_transicionar(estado_actual: str, estado_nuevo: str) -> bool:
-        """Check if transition is valid"""
-        if estado_actual not in OrdenTrabajoValidator.TRANSICIONES_VALIDAS:
-            return False
-        return estado_nuevo in OrdenTrabajoValidator.TRANSICIONES_VALIDAS[estado_actual]
-
-    @staticmethod
-    def obtener_transiciones_permitidas(estado_actual: str) -> list[str]:
-        """Get list of allowed next states"""
-        return OrdenTrabajoValidator.TRANSICIONES_VALIDAS.get(estado_actual, [])
-
-    @staticmethod
-    def validar_transicion(orden: OrdenTrabajo, nuevo_estado: str) -> tuple[bool, str | None]:
-        """Validate state transition and return (is_valid, error_message)"""
-        if nuevo_estado not in EstadoOrden.all_estados():
-            return False, f"Estado inválido: {nuevo_estado}"
-
-        if orden.estado == nuevo_estado:
-            return False, f"La orden ya está en estado: {orden.estado}"
-
-        if not OrdenTrabajoValidator.puede_transicionar(orden.estado, nuevo_estado):
-            transiciones_permitidas = OrdenTrabajoValidator.obtener_transiciones_permitidas(orden.estado)
-            if not transiciones_permitidas:
-                return False, f"No hay transiciones permitidas desde estado: {orden.estado}"
-            return False, f"Transición no permitida de {orden.estado} a {nuevo_estado}. Transiciones permitidas: {', '.join(transiciones_permitidas)}"
-
-        return True, None
+    def validar_transicion(orden: "OrdenTrabajo", nuevo_estado: EstadoOrden) -> tuple[bool, str | None]:
+        """Valida si la transición de un estado a otro es permitida."""
+        estado_actual = orden.estado
+        if nuevo_estado in OrdenTrabajoValidator.TRANSICIONES_VALIDAS.get(estado_actual, []):
+            return True, None
+        
+        estados_permitidos = [e.value for e in OrdenTrabajoValidator.TRANSICIONES_VALIDAS.get(estado_actual, [])]
+        mensaje = f"Transición de estado no válida de '{estado_actual.value}' a '{nuevo_estado.value}'. Estados permitidos: {estados_permitidos or 'ninguno'}."
+        return False, mensaje

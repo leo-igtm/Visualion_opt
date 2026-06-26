@@ -3,8 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from Backend.database.dbconnections_opt import get_db
-from Backend.Models import optica as models
-from Backend.Models import taller as models_taller
+from Backend.Models.optica import Venta, Producto, DetalleVenta, OrdenTrabajo, EstadoOrden
 from Backend.Models.Usuarios import Paciente, Vendedor
 from Backend.Models.clinica import RecetaMedica
 from Backend.Schemas import optica as schemas
@@ -34,7 +33,7 @@ async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(
     if venta_in.estado_pago not in PaymentStrategyFactory.get_available_payment_states():
         raise HTTPException(status_code=400, detail=f"Estado de pago no soportado: {venta_in.estado_pago}")
 
-    nueva_venta = models.Venta(
+    nueva_venta = Venta(
         numeroComprobante=venta_in.numero_comprobante,
         estado_pago=venta_in.estado_pago,
         total=0.0,
@@ -46,16 +45,16 @@ async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(
 
     await db.flush()
 
-    nueva_orden = models_taller.OrdenTrabajo(
+    nueva_orden = OrdenTrabajo(
         venta_id=nueva_venta.id,
-        estado=models_taller.EstadoOrden.RECIBIDA,
+        estado=EstadoOrden.RECIBIDA,
     )
     db.add(nueva_orden)
 
     total_venta = 0.0
 
     for item in venta_in.items:
-        query_prod = select(models.Producto).where(models.Producto.id == item.producto_id)
+        query_prod = select(Producto).where(Producto.id == item.producto_id)
         resultado_prod = await db.execute(query_prod)
         db_producto = resultado_prod.scalars().first()
 
@@ -74,7 +73,7 @@ async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(
         precio_historico = db_producto.precio
         total_venta += precio_historico * item.cantidad
 
-        detalle_venta = models.DetalleVenta(
+        detalle_venta = DetalleVenta(
             venta_id=nueva_venta.id,
             producto_id=item.producto_id,
             cantidad=item.cantidad,
@@ -95,12 +94,12 @@ async def crear_venta(venta_in: schemas.VentaCreate, db: AsyncSession = Depends(
 
 @router.post("/productos/", response_model=schemas.ProductoResponse, status_code=status.HTTP_201_CREATED)
 async def crear_producto(producto_in: schemas.ProductoCreate, db: AsyncSession = Depends(get_db)):
-    query_sku = select(models.Producto).where(models.Producto.sku == producto_in.sku)
+    query_sku = select(Producto).where(Producto.sku == producto_in.sku)
     resultado_sku = await db.execute(query_sku)
     if resultado_sku.scalars().first():
         raise HTTPException(status_code=400, detail="El SKU ya esta registrado.")
 
-    nuevo_producto = models.Producto(
+    nuevo_producto = Producto(
         sku=producto_in.sku,
         tipoNombre=producto_in.tipoNombre,
         precio=producto_in.precio,

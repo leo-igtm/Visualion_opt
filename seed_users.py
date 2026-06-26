@@ -1,5 +1,6 @@
 import httpx
 import asyncio
+from typing import Any
 
 # Base URL of the API
 BASE_URL = "http://127.0.0.1:8000"
@@ -7,7 +8,7 @@ BASE_URL = "http://127.0.0.1:8000"
 # User data for each role
 # Note: Passwords must be strong enough to pass validation
 # (e.g., min 8 chars, 1 uppercase, 1 digit)
-users_to_create = [
+users_to_create: list[dict[str, Any]] = [
     {
         "dni": "11111111",
         "nombre": "Maria",
@@ -55,15 +56,28 @@ users_to_create = [
         "password": "PasswordEmpleado1",
         "rol": "empleado",
         "legajo": "EMP-001"
+    },
+    {
+        "dni": "99999999",
+        "nombre": "Juan",
+        "apellido": "Paciente",
+        "telefono": "1122334455",
+        "email": "juan.paciente@example.com",
+        "usuario": "juanpaciente",
+        "password": "PasswordPaciente1",
+        "rol": "paciente",
+        "legajo": "ignored",
+        "obra_social": "OSDE",
+        "historial_medico": "Sin antecedentes."
     }
 ]
 
-async def register_user(client, user_data):
+async def register_user(client: httpx.AsyncClient, user_data: dict[str, Any]):
     """Sends a POST request to register a new user."""
     print(f"--- Creando usuario: {user_data['usuario']} (Rol: {user_data['rol']}) ---")
     try:
-        response = await client.post(f"{BASE_URL}/auth/register", json=user_data, timeout=10)
-        
+        response: httpx.Response = await client.post(f"{BASE_URL}/auth/register", json=user_data, timeout=10)
+
         if 200 <= response.status_code < 300:
             print(f"✅ ¡Éxito! Usuario '{user_data['usuario']}' creado.")
             print("Respuesta:", response.json())

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
 
@@ -17,6 +17,9 @@ class Persona(Base):
     telefono: Mapped[str | None] = mapped_column(String(50))
     email: Mapped[str | None] = mapped_column(String(100))
     # is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    usuario: Mapped[str | None] = mapped_column(String(50), unique=True, index=True)
+    contraseña: Mapped[str | None] = mapped_column(String(255))
 
     # El discriminador maestro que le dice a SQLAlchemy quién es quién
     tipo_persona: Mapped[str] = mapped_column(String(50))
@@ -55,9 +58,7 @@ class Empleado(Persona):
     id: Mapped[int] = mapped_column(ForeignKey("personas.id"), primary_key=True)
     
     legajo: Mapped[str] = mapped_column(String(50), unique=True)
-    usuario: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    contraseña: Mapped[str] = mapped_column(String(255))
-    rol: Mapped[str] = mapped_column(String(50)) # "medico", "tecnico", "vendedor"
+    rol: Mapped[str] = mapped_column(String(50), nullable=False) # "medico", "tecnico", "vendedor", "admin"
 
     __mapper_args__ = {
         # Si creás un empleado general, usará esta identidad
@@ -95,6 +96,9 @@ class Tecnico(Empleado):
     __mapper_args__ = {
         "polymorphic_identity": "tecnico"
     }
+
+    etapas_trabajo = relationship("EtapaTrabajo", back_populates="tecnico")
+    historico_estados = relationship("HistoricoEstado", back_populates="tecnico")
 
 
 class Vendedor(Empleado):

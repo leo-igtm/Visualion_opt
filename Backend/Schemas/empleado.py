@@ -41,7 +41,13 @@ class EmpleadoResponse(PersonaBase):
     usuario: str
     rol: str
 
-    
+
+class PacienteResponse(PersonaBase):
+    """Schema para las respuestas de la API al crear un paciente."""
+    id: int
+    usuario: str
+    obra_social: Optional[str] = None
+
 
 class EmpleadoUpdate(BaseModel):
     dni: Optional[str] = None

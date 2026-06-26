@@ -1,93 +1,72 @@
-"""
-Composite Pattern Implementation
-Compone objetos en estructuras de árbol
-"""
-
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import List
-from datetime import datetime, timedelta
+from typing import List, Any
 
+class ComponenteOrden(ABC):
+    """
+    La interfaz Componente declara operaciones comunes tanto para elementos
+    simples como para los complejos de una composición.
+    """
+    @property
+    def padre(self) -> ComponenteOrden | None:
+        return self._padre
 
-class OrdenComponente(ABC):
-    """Componente base para órdenes"""
+    @padre.setter
+    def padre(self, padre: ComponenteOrden | None):
+        self._padre = padre
+
+    def agregar(self, componente: ComponenteOrden) -> None:
+        pass
+
+    def quitar(self, componente: ComponenteOrden) -> None:
+        pass
+
+    def es_compuesto(self) -> bool:
+        return False
 
     @abstractmethod
-    def obtener_duracion_estimada(self) -> timedelta:
-        """Retorna duración estimada"""
+    def obtener_tiempo(self) -> int:
+        """Devuelve el tiempo estimado para completar la etapa (en minutos)."""
         pass
 
     @abstractmethod
-    def obtener_costo(self) -> float:
-        """Retorna costo estimado"""
+    def mostrar(self) -> dict[str, Any]:
+        """Devuelve una representación en diccionario de la estructura."""
         pass
 
-    @abstractmethod
-    def obtener_descripcion(self) -> str:
-        """Retorna descripción"""
-        pass
-
-
-class EtapaOtrabajo(OrdenComponente):
-    """Etapa individual (hoja en el árbol)"""
-
-    def __init__(self, nombre: str, duracion_horas: float, costo: float):
+class EtapaSimple(ComponenteOrden):
+    """La clase 'Hoja' representa los objetos finales de una composición."""
+    def __init__(self, nombre: str, tiempo: int):
         self.nombre = nombre
-        self.duracion_horas = duracion_horas
-        self.costo = costo
-        self.completada = False
+        self.tiempo = tiempo
 
-    def obtener_duracion_estimada(self) -> timedelta:
-        return timedelta(hours=self.duracion_horas)
+    def obtener_tiempo(self) -> int:
+        return self.tiempo
 
-    def obtener_costo(self) -> float:
-        return self.costo
+    def mostrar(self) -> dict[str, Any]:
+        return {"nombre": self.nombre, "tiempo": self.tiempo, "tipo": "etapa"}
 
-    def obtener_descripcion(self) -> str:
-        return f"Etapa: {self.nombre} ({self.duracion_horas}h)"
+class Caja(ComponenteOrden):
+    """La clase 'Composite' representa los componentes complejos que pueden tener hijos."""
+    def __init__(self, nombre: str):
+        self.nombre = nombre
+        self._hijos: List[ComponenteOrden] = []
 
-    def marcar_completada(self):
-        self.completada = True
+    def agregar(self, componente: ComponenteOrden) -> None:
+        self._hijos.append(componente)
+        componente.padre = self
 
-    def __repr__(self):
-        return f"Etapa({self.nombre}, {self.duracion_horas}h, ${self.costo})"
+    def obtener_tiempo(self) -> int:
+        return sum(hijo.obtener_tiempo() for hijo in self._hijos)
 
+    def mostrar(self) -> dict[str, Any]:
+        return {
+            "nombre": self.nombre,
+            "tipo": "caja",
+            "tiempo_subtotal": self.obtener_tiempo(),
+            "hijos": [hijo.mostrar() for hijo in self._hijos]
+        }
 
-class OrdenCompuesta(OrdenComponente):
-    """Orden que agrupa múltiples etapas (composite)"""
-
-    def __init__(self, numero_orden: str):
-        self.numero_orden = numero_orden
-        self.etapas: List[OrdenComponente] = []
-        self.created_at = datetime.now()
-
-    def agregar_etapa(self, etapa: OrdenComponente) -> None:
-        """Agregar etapa a la orden"""
-        self.etapas.append(etapa)
-
-    def remover_etapa(self, etapa: OrdenComponente) -> None:
-        """Remover etapa de la orden"""
-        if etapa in self.etapas:
-            self.etapas.remove(etapa)
-
-    def obtener_duracion_estimada(self) -> timedelta:
-        """Suma duraciones de todas las etapas"""
-        total = timedelta()
-        for etapa in self.etapas:
-            total += etapa.obtener_duracion_estimada()
-        return total
-
-    def obtener_costo(self) -> float:
-        """Suma costos de todas las etapas"""
-        return sum(etapa.obtener_costo() for etapa in self.etapas)
-
-    def obtener_descripcion(self) -> str:
-        """Describe todas las etapas"""
-        etapas_desc = [etapa.obtener_descripcion() for etapa in self.etapas]
-        return f"Orden {self.numero_orden}:\n  " + "\n  ".join(etapas_desc)
-
-    def obtener_cantidad_etapas(self) -> int:
-        """Retorna cantidad total de etapas"""
-        return len(self.etapas)
-
-    def __repr__(self):
-        return f"Orden({self.numero_orden}, {len(self.etapas)} etapas)"
+# Alias para claridad semántica
+Orden = Caja
+Etapa = EtapaSimple

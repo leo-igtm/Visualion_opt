@@ -1,70 +1,139 @@
-from sqlalchemy import Integer, String, Float, ForeignKey
+import enum
+from datetime import datetime
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Enum as SQLAlchemyEnum,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
-from Backend.patterns.strategy import PaymentStrategyFactory
-from decimal import Decimal
 
 
 class Producto(Base):
-    __tablename__ = 'productos'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    __tablename__ = "productos"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sku: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    tipoNombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    tipoNombre: Mapped[str] = mapped_column("tipoNombre", String(100), nullable=False)
     precio: Mapped[float] = mapped_column(Float, nullable=False)
-    stockDisponible: Mapped[int] = mapped_column(Integer, nullable=False)
+    stockDisponible: Mapped[int] = mapped_column("stockDisponible", Integer, nullable=False)
+    fecha_creacion: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    fecha_actualizacion: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
-    detalles = relationship("DetalleVenta", back_populates="producto")
+    detalles_venta = relationship("DetalleVenta", back_populates="producto")
 
 
 class Venta(Base):
-    __tablename__ = 'ventas'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    numeroComprobante: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    __tablename__ = "ventas"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    numeroComprobante: Mapped[str] = mapped_column("numeroComprobante", String(50), unique=True, nullable=False)
+    fecha_creacion: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     estado_pago: Mapped[str] = mapped_column(String(50), nullable=False)
     total: Mapped[float] = mapped_column(Float, nullable=False)
+    paciente_id: Mapped[int] = mapped_column(ForeignKey("pacientes.id"), nullable=False)
+    vendedor_id: Mapped[int] = mapped_column(ForeignKey("vendedores.id"), nullable=False)
+    receta_id: Mapped[int | None] = mapped_column(ForeignKey("recetas.uuid"))
+    fecha_actualizacion: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
-    paciente_id: Mapped[int] = mapped_column(ForeignKey('pacientes.id'), nullable=False)
-    vendedor_id: Mapped[int] = mapped_column(ForeignKey('vendedores.id'), nullable=False)
-    receta_id: Mapped[int | None] = mapped_column(ForeignKey('recetas.uuid'), nullable=True)
-
-    receta = relationship("RecetaMedica", back_populates="ventas")
     paciente = relationship("Paciente", back_populates="ventas")
     vendedor = relationship("Vendedor", back_populates="ventas")
-    orden_trabajo = relationship("OrdenTrabajo", back_populates="venta", uselist=False, cascade="all, delete-orphan")
-    items = relationship("DetalleVenta", back_populates="venta", cascade="all, delete-orphan")
-
-    def get_payment_strategy(self, metodo_pago: str):
-        """Obtiene estrategia de pago según método"""
-        return PaymentStrategyFactory.get_strategy(metodo_pago)
-
-    def procesar_pago(self, metodo_pago: str, payment_data: dict) -> dict:
-        """Procesa pago usando estrategia"""
-        strategy = self.get_payment_strategy(metodo_pago)
-
-        if not strategy.validate(payment_data):
-            raise ValueError("Datos de pago inválidos")
-
-        amount = Decimal(str(self.total))
-        fee = strategy.get_fee(amount)
-        result = strategy.process(amount)
-
-        return {
-            "result": result,
-            "fee": str(fee),
-            "total_with_fee": str(amount + fee)
-        }
+    receta = relationship("RecetaMedica", back_populates="venta")
+    detalles = relationship("DetalleVenta", back_populates="venta")
+    orden_trabajo = relationship("OrdenTrabajo", back_populates="venta", uselist=False)
 
 
 class DetalleVenta(Base):
-    __tablename__ = 'detalleVentas'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    venta_id: Mapped[int] = mapped_column(ForeignKey('ventas.id'), nullable=False)
-    producto_id: Mapped[int] = mapped_column(ForeignKey('productos.id'), nullable=False)
+    __tablename__ = "detalleVentas"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    venta_id: Mapped[int] = mapped_column(ForeignKey("ventas.id"), nullable=False)
+    producto_id: Mapped[int] = mapped_column(ForeignKey("productos.id"), nullable=False)
     cantidad: Mapped[int] = mapped_column(Integer, nullable=False)
     precio_unitario: Mapped[float] = mapped_column(Float, nullable=False)
 
-    venta = relationship("Venta", back_populates="items")
-    producto = relationship("Producto", back_populates="detalles")
+    venta = relationship("Venta", back_populates="detalles")
+    producto = relationship("Producto", back_populates="detalles_venta")
+
+
+class Turno(Base):
+    __tablename__ = "turnos"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    fecha_hora: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    motivo: Mapped[str] = mapped_column(String(255), nullable=False)
+    estado: Mapped[str] = mapped_column(String(50), nullable=False)
+    paciente_id: Mapped[int] = mapped_column(ForeignKey("pacientes.id"), nullable=False)
+    medico_id: Mapped[int] = mapped_column(ForeignKey("medicos.id"), nullable=False)
+
+    paciente = relationship("Paciente", back_populates="turnos")
+    medico = relationship("Medico", back_populates="turnos")
+    receta = relationship("RecetaMedica", back_populates="turno", uselist=False)
+
+
+class RecetaMedica(Base):
+    __tablename__ = "recetas"
+    uuid: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    turno_id: Mapped[int] = mapped_column(ForeignKey("turnos.id"), nullable=False)
+    paciente_id: Mapped[int] = mapped_column(ForeignKey("pacientes.id"), nullable=False)
+    medico_id: Mapped[int] = mapped_column(ForeignKey("medicos.id"), nullable=False)
+    # ... (resto de campos de la receta)
+
+    turno = relationship("Turno", back_populates="receta")
+    paciente = relationship("Paciente", back_populates="recetas")
+    medico = relationship("Medico", back_populates="recetas")
+    venta = relationship("Venta", back_populates="receta")
+
+
+class EstadoOrden(str, enum.Enum):
+    RECIBIDA = "recibida"
+    EN_PROCESO = "en_proceso"
+    LISTA_PARA_ENTREGA = "lista_para_entrega"
+    ENTREGADA = "entregada"
+    CANCELADA = "cancelada"
+
+
+class OrdenTrabajo(Base):
+    __tablename__ = "ordenes_trabajo"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    venta_id: Mapped[int] = mapped_column(ForeignKey("ventas.id"), unique=True, nullable=False)
+    estado: Mapped[EstadoOrden] = mapped_column(SQLAlchemyEnum(EstadoOrden), default=EstadoOrden.RECIBIDA, nullable=False)
+    descripcion_trabajo: Mapped[str | None] = mapped_column(Text)
+    fecha_entrega_esperada: Mapped[datetime | None] = mapped_column(DateTime)
+
+    venta = relationship("Venta", back_populates="orden_trabajo")
+    etapas = relationship("EtapaTrabajo", back_populates="orden")
+    historico_estados = relationship("HistoricoEstado", back_populates="orden")
+
+
+class EtapaTrabajo(Base):
+    __tablename__ = "etapas_trabajo"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    orden_id: Mapped[int] = mapped_column(ForeignKey("ordenes_trabajo.id"), nullable=False)
+    tecnico_id: Mapped[int | None] = mapped_column(ForeignKey("tecnicos.id"))
+    etapa: Mapped[str] = mapped_column(String(50), nullable=False)
+    completado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    notas: Mapped[str | None] = mapped_column(Text)
+
+    orden = relationship("OrdenTrabajo", back_populates="etapas")
+    tecnico = relationship("Tecnico", back_populates="etapas_trabajo")
+
+
+class HistoricoEstado(Base):
+    __tablename__ = "historico_estados"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    orden_id: Mapped[int] = mapped_column(ForeignKey("ordenes_trabajo.id"), nullable=False)
+    tecnico_id: Mapped[int | None] = mapped_column(ForeignKey("tecnicos.id"))
+    estado_anterior: Mapped[EstadoOrden | None] = mapped_column(SQLAlchemyEnum(EstadoOrden))
+    estado_nuevo: Mapped[EstadoOrden] = mapped_column(SQLAlchemyEnum(EstadoOrden), nullable=False)
+
+    orden = relationship("OrdenTrabajo", back_populates="historico_estados")
+    tecnico = relationship("Tecnico", back_populates="historico_estados")

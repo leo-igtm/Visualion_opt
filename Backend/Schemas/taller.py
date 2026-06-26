@@ -1,107 +1,65 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
-from Backend.Models.taller import EstadoOrden
+from typing import List, Optional
+from Backend.Models.optica import EstadoOrden
 
-'''Esquemas para validación y serialización de datos relacionados con órdenes de trabajo, etapas de trabajo e histórico de estados en el módulo de taller.'''
+# --- Schemas para Etapas de Trabajo ---
 
+class EtapaTrabajoBase(BaseModel):
+    etapa: str
+    completado: bool = False
+    tecnico_id: Optional[int] = None
+    notas: Optional[str] = None
 
-class OrdenTrabajoBase(BaseModel):
-    venta_id: int
-    descripcion_trabajo: Optional[str] = None
-    fecha_entrega_esperada: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-
-
-class OrdenTrabajoCreate(OrdenTrabajoBase):
+class EtapaTrabajoCreate(EtapaTrabajoBase):
     pass
 
+class EtapaTrabajoResponse(EtapaTrabajoBase):
+    id: int
+    orden_id: int
+    fecha_creacion: datetime
+    fecha_actualizacion: datetime
 
-class OrdenTrabajoUpdate(BaseModel):
+    class Config:
+        from_attributes = True
+
+# --- Schemas para Histórico de Estados ---
+
+class HistoricoEstadosResponse(BaseModel):
+    id: int
+    estado_anterior: Optional[EstadoOrden] = None
+    estado_nuevo: EstadoOrden
+    tecnico_id: Optional[int] = None
+    fecha_creacion: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- Schemas para Órdenes de Trabajo ---
+
+class OrdenTrabajoBase(BaseModel):
     descripcion_trabajo: Optional[str] = None
     fecha_entrega_esperada: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+class OrdenTrabajoCreate(OrdenTrabajoBase):
+    venta_id: int
 
-
-# CORRECCIÓN BUG #6: orden_id removido del body — llega por path parameter
-class EtapaTrabajoCreate(BaseModel):
-    etapa: str
-    tecnico_id: Optional[int] = None
-    completado: bool = False
-    notas: Optional[str] = None
-
-    @field_validator('etapa')
-    @classmethod
-    def validate_etapa(cls, v: str):
-        valid_etapas = ["biselado", "montaje", "control_calidad"]
-        if v not in valid_etapas:
-            raise ValueError(f"Etapa inválida. Debe ser una de: {', '.join(valid_etapas)}")
-        return v
-
-    class Config:
-        from_attributes = True
-
-
-class EtapaTrabajoResponse(BaseModel):
+class OrdenTrabajoResponse(OrdenTrabajoBase):
     id: int
-    orden_id: int
-    etapa: str
-    tecnico_id: Optional[int] = None
-    completado: bool = False
-    notas: Optional[str] = None
-    fecha_creacion: Optional[datetime] = None
-    fecha_actualizacion: Optional[datetime] = None
+    venta_id: int
+    estado: EstadoOrden
+    etapas: List[EtapaTrabajoResponse] = []
+    historico_estados: List[HistoricoEstadosResponse] = []
 
     class Config:
         from_attributes = True
-
-
-class HistoricoEstadosBase(BaseModel):
-    orden_id: int
-    estado_anterior: Optional[str] = None
-    estado_nuevo: str
-    tecnico_id: Optional[int] = None
-
-    @field_validator('estado_nuevo')
-    @classmethod
-    def validate_estado(cls, v: str):
-        if v not in EstadoOrden.all_estados():
-            raise ValueError(f"Estado inválido: {v}")
-        return v
-
-    class Config:
-        from_attributes = True
-
-
-class HistoricoEstadosResponse(HistoricoEstadosBase):
-    id: int
-    fecha_creacion: datetime
-
 
 class CambiarEstadoOrden(BaseModel):
     estado_nuevo: str
     tecnico_id: Optional[int] = None
-    notas: Optional[str] = None
 
-    @field_validator('estado_nuevo')
-    @classmethod
-    def validate_estado(cls, v: str):
-        if v not in EstadoOrden.all_estados():
-            raise ValueError(f"Estado inválido: {v}")
-        return v
+# --- Schema para el endpoint de demo del Composite Pattern ---
 
-    class Config:
-        from_attributes = True
-
-
-class OrdenTrabajoResponse(OrdenTrabajoBase):
-    id: int
-    estado: str
-    fecha_creacion: Optional[datetime] = None
-    fecha_actualizacion: Optional[datetime] = None
-    etapas: Optional[list[EtapaTrabajoResponse]] = None
-    historico_estados: Optional[list[HistoricoEstadosResponse]] = None
+class EtapaOrdenData(BaseModel):
+    nombre: str
+    tiempo_estimado: int
