@@ -5,16 +5,14 @@ from typing import Type, Union
 from sqlalchemy.exc import IntegrityError
 from psycopg.errors import UniqueViolation
 
-from Backend.database.dbconnections_opt import get_db
-from Backend.Schemas.empleado import EmpleadoResponse, PacienteCreate, PacienteResponse, UserCreate
-from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor, Paciente, Persona
-from Backend.dependencies import get_current_active_admin_user
-from Backend.Core.security import get_password_hash
+from ..database.dbconnections_opt import get_db
+from ..Schemas.empleado import EmpleadoResponse, PacienteCreate, PacienteResponse, UserCreate
+from ..Models.Usuarios import Empleado, Medico, Tecnico, Vendedor, Paciente, Persona
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"],
-    dependencies=[Depends(get_current_active_admin_user)] # Protege todas las rutas de este router
+     # Protege todas las rutas de este router
 )
 
 #crear empleados medico,tecnico,vendedor y pacientes
@@ -54,11 +52,8 @@ async def create_user(
             raise HTTPException(status_code=409, detail="Ya existe un empleado con este usuario o DNI.")
 
         # Hasheamos la contraseña antes de guardarla
-        hashed_password = get_password_hash(user_data.password)
-        
         # Preparamos los datos para el modelo SQLAlchemy
         model_data = user_data.model_dump(exclude={"password"})
-        model_data['contraseña'] = hashed_password
 
         # Mapeamos el rol del schema al modelo SQLAlchemy correspondiente
         rol_class_map: dict[str, UserModelType] = {

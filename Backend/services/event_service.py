@@ -1,4 +1,4 @@
-from Backend.patterns.observer import Subject
+from ..patterns.observer import Subject
 
 class EventService:
     """

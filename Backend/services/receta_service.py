@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from Backend.Models.clinica import RecetaMedica
+from ..Models.clinica import RecetaMedica
 from sqlalchemy.future import select
 
 #validacion de receta creacion de receta

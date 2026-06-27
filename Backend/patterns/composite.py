@@ -67,6 +67,40 @@ class Caja(ComponenteOrden):
             "hijos": [hijo.mostrar() for hijo in self._hijos]
         }
 
+class OrdenCompuesta(Caja):
+    """La clase 'OrdenCompuesta' representa la orden completa, que puede contener múltiples cajas y etapas."""
+    def __init__(self, nombre: str):
+        super().__init__(nombre)
+        self.nombre = nombre
+
+    def obtener_tiempo(self) -> int:
+        return sum(hijo.obtener_tiempo() for hijo in self._hijos)
+
+    def mostrar(self) -> dict[str, Any]:
+        return {
+            "nombre": self.nombre,
+            "tipo": "orden",
+            "tiempo_subtotal": self.obtener_tiempo(),
+            "hijos": [hijo.mostrar() for hijo in self._hijos]
+        }
+
+class EtapaOtrabajo(EtapaSimple):
+    """Clase que representa una etapa de trabajo específica dentro de una orden."""
+    def __init__(self, nombre: str, tiempo: int):
+        super().__init__(nombre, tiempo)
+        self.nombre = nombre
+        self.tiempo = tiempo
+        self.padre = None
+        self._hijos: List[ComponenteOrden] = []
+        
+    def agregar_etapa(self, etapa: EtapaSimple) -> None:
+        self._hijos.append(etapa)
+        etapa.padre = self
+        
+        
+
+
+
 # Alias para claridad semántica
 Orden = Caja
 Etapa = EtapaSimple

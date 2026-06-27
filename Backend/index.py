@@ -1,12 +1,11 @@
 from fastapi import FastAPI
-from Backend.controllers.auth_controller import router as auth_router
-from Backend.controllers.users import router as users_router
-from Backend.controllers.paciente import router as paciente_router
-from Backend.controllers.clinica import router as clinica_router
-from Backend.controllers.optica import router as optica_router
-from Backend.controllers.taller import router as taller_router
+from .controllers.users import router as user_router
+from .controllers.paciente import router as paciente_router
+from .controllers.clinica import router as clinica_router
+from .controllers.optica import router as optica_router
+from .controllers.taller import router as taller_router
 from fastapi.middleware.cors import CORSMiddleware
-from Backend.logger.logger import logger_manager
+from .logger.logger import logger_manager
 from contextlib import asynccontextmanager
 
 logger = logger_manager.get_logger()
@@ -26,8 +25,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-app.include_router(auth_router)
-app.include_router(users_router)
+
+# Incluir los routers en la aplicación principal
+app.include_router(user_router)
 app.include_router(clinica_router)
 app.include_router(optica_router)
 app.include_router(taller_router)

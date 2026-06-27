@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from Backend.database.dbconnections_opt import get_db
-from Backend.Models.optica import Venta, Producto, DetalleVenta, OrdenTrabajo, EstadoOrden
-from Backend.Models.Usuarios import Paciente, Vendedor
-from Backend.Models.clinica import RecetaMedica
-from Backend.Schemas import optica as schemas
-from Backend.patterns.strategy import PaymentStrategyFactory
+from ..database.dbconnections_opt import get_db
+from ..Models.optica import Venta, Producto, DetalleVenta, OrdenTrabajo, EstadoOrden
+from ..Models.Usuarios import Paciente, Vendedor
+from ..Models.clinica import RecetaMedica
+from ..Schemas import optica as schemas
+from ..patterns.strategy import PaymentStrategyFactory
 
 router = APIRouter(prefix="/optica", tags=["Optica - Ventas y Productos"])
 

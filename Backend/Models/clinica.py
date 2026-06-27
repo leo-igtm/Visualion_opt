@@ -1,11 +1,11 @@
 from sqlalchemy import Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from Backend.database.dbconnections_opt import Base
+from ..database.dbconnections_opt import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from Backend.Models.Usuarios import Paciente, Medico
-    from Backend.Models.optica import Venta
+    from .Usuarios import Paciente, Medico
+    from .optica import Venta
 
 
 class Turno(Base):

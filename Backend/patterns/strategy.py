@@ -9,7 +9,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import ClassVar, Mapping
 
-from Backend.constants import ComercialConstants
+from ..constants import ComercialConstants
 
 
 class PaymentStrategy(ABC):

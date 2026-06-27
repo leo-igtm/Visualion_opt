@@ -1,7 +1,7 @@
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from Backend.database.dbconnections_opt import Base
-from Backend.Models.clinica import Turno, RecetaMedica
+from ..database.dbconnections_opt import Base
+from .clinica import Turno, RecetaMedica
 
 #Documentacion de estas clases 
 

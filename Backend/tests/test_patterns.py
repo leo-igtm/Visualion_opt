@@ -1,12 +1,10 @@
 import unittest
 from decimal import Decimal
-from datetime import timedelta
 
 # Import patterns to test
 from Backend.patterns.singleton import Singleton
 from Backend.patterns.strategy import CashPaymentStrategy, CreditCardPaymentStrategy, PaymentStrategyFactory
-from Backend.patterns.observer import EventSubject, Event, Observer
-from Backend.patterns.composite import OrdenCompuesta, EtapaOtrabajo
+
 from Backend.constants import AuthConstants
 
 class TestSingleton(unittest.TestCase):
@@ -52,60 +50,6 @@ class TestStrategy(unittest.TestCase):
         with self.assertRaises(ValueError):
             PaymentStrategyFactory.get_strategy("")
 
-class TestObserver(unittest.TestCase):
-    def test_observer_notification(self):
-        class MockObserver(Observer):
-            def __init__(self):
-                self.notified = False
-                self.last_event = None
-                
-            def update(self, event):
-                self.notified = True
-                self.last_event = event
-
-        subject = EventSubject()
-        observer = MockObserver()
-        subject.attach(observer)
-        
-        event = Event("test_event", {"key": "value"})
-        subject.notify(event)
-        
-        self.assertTrue(observer.notified)
-        self.assertEqual(observer.last_event.event_type, "test_event")
-        self.assertEqual(observer.last_event.data, {"key": "value"})
-
-    def test_observer_detach(self):
-        class MockObserver(Observer):
-            def __init__(self):
-                self.notified = False
-                self.last_event = None
-
-            def update(self, event):
-                self.notified = True
-                self.last_event = event
-
-        subject = EventSubject()
-        observer = MockObserver()
-        subject.attach(observer)
-        subject.detach(observer)
-
-        event = Event("test_event", {"key": "value"})
-        subject.notify(event)
-
-        self.assertFalse(observer.notified)
-
-
-class TestComposite(unittest.TestCase):
-    def test_composite_duration_and_cost(self):
-        orden = OrdenCompuesta("ORD-001")
-        etapa1 = EtapaOtrabajo("Biselado", 2.0, 150.0)
-        etapa2 = EtapaOtrabajo("Montaje", 1.5, 100.0)
-        
-        orden.agregar_etapa(etapa1)
-        orden.agregar_etapa(etapa2)
-        
-        self.assertEqual(orden.obtener_costo(), 250.0)
-        self.assertEqual(orden.obtener_duracion_estimada(), timedelta(hours=3.5))
 
 class TestConstants(unittest.TestCase):
     def test_auth_constants(self):

@@ -1,6 +1,6 @@
 from typing import Literal, Optional, Union
 from pydantic import BaseModel
-from Backend.Schemas.persona_base import PersonaBase
+from .persona_base import PersonaBase
 
 # --- Schemas para Creación de Usuarios (Refactorizado) ---
 

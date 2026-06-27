@@ -41,7 +41,6 @@ export interface UserRegister {
   email?: string;
   legajo?: string;
   usuario: string;
-  password;
   rol: string;
   matricula?: string;
   especialidad?: string;

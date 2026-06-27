@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from Backend.database.dbconnections_opt import get_db
-from Backend.Schemas.paciente import PacienteCreate, PacienteOut, PacienteUpdate
-from Backend.Models.Usuarios import Paciente, Persona
+from ..database.dbconnections_opt import get_db
+from ..Schemas.paciente import PacienteCreate, PacienteOut, PacienteUpdate
+from ..Models.Usuarios import Paciente, Persona
 
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
 

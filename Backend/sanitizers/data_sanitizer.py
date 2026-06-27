@@ -31,3 +31,5 @@ class DataSanitizer:
     def sanitize_dni(value: str) -> str:
         """Keep only alphanumeric"""
         return re.sub(r'[^a-zA-Z0-9]', '', value).upper()
+    
+

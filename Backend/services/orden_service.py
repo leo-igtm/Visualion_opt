@@ -1,6 +1,6 @@
 from typing import List, Any
-from Backend.Schemas.taller import EtapaOrdenData
-from Backend.patterns.composite import Orden, EtapaSimple, Caja
+from ..Schemas.taller import EtapaOrdenData
+from ..patterns.composite import Orden, EtapaSimple, Caja
 
 class OrdenService:
     """

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from Backend.Schemas.persona_base import PersonaBase
+from ..Schemas.persona_base import PersonaBase
 
 # Schema para los datos del token JWT
 class Token(BaseModel):
