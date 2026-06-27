@@ -1,6 +1,12 @@
 from sqlalchemy import Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from Backend.Models.Usuarios import Paciente, Medico
+    from Backend.Models.optica import Venta
+
 
 class Turno(Base):
     __tablename__ = 'turnos'
@@ -12,9 +18,9 @@ class Turno(Base):
     paciente_id: Mapped[int] = mapped_column(ForeignKey('pacientes.id'), nullable=False)
     medico_id: Mapped[int] = mapped_column(ForeignKey('medicos.id'), nullable=False)
 
-    paciente = relationship("Paciente", back_populates="turnos")
-    medico = relationship("Medico", back_populates="turnos")
-    receta = relationship("RecetaMedica", back_populates="turno", uselist=False)
+    paciente: Mapped["Paciente"] = relationship("Paciente", back_populates="turnos")
+    medico: Mapped["Medico"] = relationship("Medico", back_populates="turnos")
+    receta: Mapped["RecetaMedica"] = relationship("RecetaMedica", back_populates="turno", uselist=False)
 
 
 class RecetaMedica(Base):
@@ -42,7 +48,7 @@ class RecetaMedica(Base):
     distancia_pupilar: Mapped[float | None] = mapped_column(Float, nullable=True)
     tipo_lente: Mapped[str | None] = mapped_column(String(50), nullable=True)  # "monofocal", "bifocal", "progresiva"
     # Relaciones
-    turno = relationship("Turno", back_populates="receta")
-    ventas = relationship("Venta", back_populates="receta")
-    paciente = relationship("Paciente", back_populates="recetas")
-    medico = relationship("Medico", back_populates="recetas")
+    turno: Mapped["Turno"] = relationship("Turno", back_populates="receta")
+    ventas: Mapped[list["Venta"]] = relationship("Venta", back_populates="receta")
+    paciente: Mapped["Paciente"] = relationship("Paciente", back_populates="recetas")
+    medico: Mapped["Medico"] = relationship("Medico", back_populates="recetas")

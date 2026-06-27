@@ -19,6 +19,14 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
 
+        // Lógica de Placeholder para demostración
+        if (usuario === 'demo@visualion.com' && contraseña === 'password123') {
+            console.log('Iniciando sesión con credenciales de demostración...');
+            authService.guardarToken('fake-demo-token'); // Guardar un token falso
+            router.push('/dashboard'); // Redirigir al dashboard
+            return; // Detener la ejecución para no llamar al backend real
+        }
+
         try {
             const response = await authService.login(usuario, contraseña);
             authService.guardarToken(response.access_token);
@@ -159,6 +167,15 @@ export default function LoginPage() {
                                 </svg>
                                 GitHub
                             </button>
+                        </div>
+                    </FadeIn>
+
+                    {/* Credenciales de Demostración */}
+                    <FadeIn delay={700} duration={800}>
+                        <div className="mt-6 text-center text-sm text-gray-500 bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+                            <p className="font-semibold text-gray-400">Credenciales de Prueba</p>
+                            <p>Email: <code className="text-indigo-400">demo@visualion.com</code></p>
+                            <p>Contraseña: <code className="text-indigo-400">password123</code></p>
                         </div>
                     </FadeIn>
 

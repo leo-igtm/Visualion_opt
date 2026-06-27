@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from Backend.database.dbconnections_opt import Base
+from Backend.Models.clinica import RecetaMedica
 
 
 class Producto(Base):
@@ -48,7 +49,7 @@ class Venta(Base):
 
     paciente = relationship("Paciente", back_populates="ventas")
     vendedor = relationship("Vendedor", back_populates="ventas")
-    receta = relationship("RecetaMedica", back_populates="venta")
+    receta: Mapped["RecetaMedica"] = relationship("RecetaMedica", back_populates="ventas")
     detalles = relationship("DetalleVenta", back_populates="venta")
     orden_trabajo = relationship("OrdenTrabajo", back_populates="venta", uselist=False)
 

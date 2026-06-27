@@ -1,5 +1,5 @@
 // types/taller.ts
-export type EstadoOrden = "recibida" | "biselado" | "montaje" | "control_calidad" | "listo";
+export type EstadoOrden = "recibida" | "en_proceso" | "lista_para_entrega" | "entregada" | "cancelada";
 
 export interface OrdenTrabajo {
   id: number;
@@ -35,16 +35,16 @@ export interface HistoricoEstados {
 
 export const ESTADOS_COLORES: Record<EstadoOrden, string> = {
   recibida: "bg-gray-600",
-  biselado: "bg-yellow-600",
-  montaje: "bg-blue-600",
-  control_calidad: "bg-orange-600",
-  listo: "bg-green-600"
+  en_proceso: "bg-yellow-600",
+  lista_para_entrega: "bg-blue-600",
+  entregada: "bg-green-600",
+  cancelada: "bg-red-600"
 };
 
 export const ESTADOS_LABEL: Record<EstadoOrden, string> = {
   recibida: "Recibida",
-  biselado: "Biselado",
-  montaje: "Montaje",
-  control_calidad: "Control QC",
-  listo: "Listo"
+  en_proceso: "En Proceso",
+  lista_para_entrega: "Lista para Entrega",
+  entregada: "Entregada",
+  cancelada: "Cancelada"
 };
