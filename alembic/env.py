@@ -16,14 +16,6 @@ sys.path.append(BASE_DIR)
 from Backend.database.dbconnections_opt import Base
 # Se importan todos los modelos para que Alembic los detecte y pueda
 # generar las migraciones automáticamente.
-from Backend.Models.Usuarios import Persona, Paciente, Empleado, Medico, Tecnico, Vendedor
-from Backend.Models.clinica import Turno, RecetaMedica
-from Backend.Models.optica import Producto, Venta, DetalleVenta
-# La siguiente línea es una fuente probable de errores de importación.
-# 1. El archivo 'Backend/Models/taller.py' que proporcionaste no contiene estos modelos.
-#    Debes asegurarte de que el archivo correcto que contiene tus modelos de Taller (OrdenTrabajo, etc.) esté siendo importado.
-# 2. El nombre 'HistoricoEstados' parece ser un error tipográfico. En 'Usuarios.py', la relación apunta a 'HistoricoEstado' (singular).
-from Backend.Models.taller import OrdenTrabajo, EtapaTrabajo, HistoricoEstado
 
 
 # this is the Alembic Config object, which provides

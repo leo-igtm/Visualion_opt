@@ -1,6 +1,6 @@
 from sqlalchemy import Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from ..database.dbconnections_opt import Base
+from Backend.database.dbconnections_opt import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

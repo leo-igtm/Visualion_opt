@@ -12,8 +12,8 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from ..database.dbconnections_opt import Base
-from .clinica import RecetaMedica
+from Backend.database.dbconnections_opt import Base
+from Backend.Models.clinica import RecetaMedica
 
 
 class Producto(Base):

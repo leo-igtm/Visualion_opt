@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from datetime import datetime
-from ..database.dbconnections_opt import get_db
-from ..Models import clinica as models
-from ..Models.Usuarios import Paciente, Medico
-from ..Schemas import clinica as schemas
+from Backend.database.dbconnections_opt import get_db 
+from Backend.Models import clinica as models
+from Backend.Models.Usuarios import Paciente, Medico
+from Backend.Schemas import clinica as schemas
 from pydantic import ValidationError
 
 router = APIRouter(prefix="/clinica", tags=["Clínica - Turnos y Recetas"])

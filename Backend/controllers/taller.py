@@ -2,15 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from ..database.dbconnections_opt import get_db
-from ..Models import optica as models
-from ..Models.optica import Venta, OrdenTrabajo, EtapaTrabajo, HistoricoEstado
-from ..Models.Usuarios import Tecnico
-from ..Schemas import taller as schemas
-from ..validators.taller_validators import OrdenTrabajoValidator
-from ..patterns.observer import Event
-from ..services.event_service import EventService
-from ..services.orden_service import OrdenService
+from Backend.database.dbconnections_opt import get_db
+from Backend.Models import optica as models
+from Backend.Models.optica import Venta, OrdenTrabajo, EtapaTrabajo, HistoricoEstado
+from Backend.Models.Usuarios import Tecnico
+from Backend.Schemas import taller as schemas
+from Backend.validators.taller_validators import OrdenTrabajoValidator
+from Backend.patterns.observer import Event
+from Backend.services.event_service import EventService
+from Backend.services.orden_service import OrdenService
 from pydantic import ValidationError
 from typing import List, Any
 

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
-from ..Models.optica import EstadoOrden
+from Backend.Models.optica import EstadoOrden
 
 # --- Schemas para Etapas de Trabajo ---
 
