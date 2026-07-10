@@ -1,5 +1,5 @@
 from typing import Optional
-from Backend.Schemas.persona_base import PersonaBase
+from ..Schemas.persona_base import PersonaBase
 from pydantic import BaseModel
 
 ''' Esquemas para representar los datos de un paciente, incluyendo su obra social e historial médico. Estos esquemas se utilizan para validar la información al crear o actualizar un paciente, así como para serializar la información del paciente al responder a las solicitudes de la API.'''

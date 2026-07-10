@@ -1,7 +1,7 @@
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Optional, Any
-from Backend.validators.optica_validators import PrescriptionValidator
+from ..validators.optica_validators import PrescriptionValidator
 
 
 class TurnoBase(BaseModel):

@@ -5,9 +5,9 @@ from typing import Type, Union
 from sqlalchemy.exc import IntegrityError
 from psycopg.errors import UniqueViolation
 
-from Backend.database.dbconnections_opt import get_db
-from Backend.Schemas.empleado import EmpleadoResponse, PacienteCreate, PacienteResponse, UserCreate
-from Backend.Models.Usuarios import Empleado, Medico, Tecnico, Vendedor, Paciente, Persona
+from ..database.dbconnections_opt import get_db
+from ..Schemas.empleado import EmpleadoResponse, PacienteCreate, PacienteResponse, UserCreate
+from ..Models.Usuarios import Empleado, Medico, Tecnico, Vendedor, Paciente, Persona
 
 router = APIRouter(
     prefix="/users",

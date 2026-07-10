@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from Backend.Models.optica import EstadoOrden
+from ..Models.optica import EstadoOrden
 
 if TYPE_CHECKING:
     from Backend.Models.optica import OrdenTrabajo

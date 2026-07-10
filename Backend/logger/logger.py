@@ -5,8 +5,8 @@ Gestiona logs centralizados en la aplicación
 
 import logging
 from pathlib import Path
-from Backend.patterns.singleton import Singleton
-from Backend.constants import LogConstants
+from ..patterns.singleton import Singleton
+from ..constants import LogConstants
 
 
 class LoggerManager(Singleton):

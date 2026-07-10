@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from Backend.controllers import users
+from ..controllers import users
 
 # Puedes agregar más routers a medida que crezcan los módulos
 # from Backend.routers import pacientes, optica, etc.

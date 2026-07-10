@@ -1,4 +1,4 @@
-from Backend.constants import PrescriptionConstants
+from ..constants import PrescriptionConstants
 
 
 class PrescriptionValidator:

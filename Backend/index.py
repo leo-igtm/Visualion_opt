@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-from Backend.controllers.users import router as user_router
-from Backend.controllers.paciente import router as paciente_router
-from Backend.controllers.clinica import router as clinica_router
-from Backend.controllers.optica import router as optica_router
-from Backend.controllers.taller import router as taller_router
+from .controllers.users import router as user_router
+from .controllers.paciente import router as paciente_router
+from .controllers.clinica import router as clinica_router
+from .controllers.optica import router as optica_router
+from .controllers.taller import router as taller_router
 from fastapi.middleware.cors import CORSMiddleware
-from Backend.logger.logger import logger_manager
+from .logger.logger import logger_manager
 from contextlib import asynccontextmanager
 
 logger = logger_manager.get_logger()

@@ -7,7 +7,7 @@ from sqlalchemy import DateTime
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
-from Backend.patterns.singleton import Singleton
+from ..patterns.singleton import Singleton
 
 load_dotenv()
 database_url_raw = os.getenv("DATABASE_URL")
