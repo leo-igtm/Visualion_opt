@@ -130,6 +130,7 @@ class CheckPaymentStrategy(PaymentStrategy):
         }
 
     def get_fee(self, amount: Decimal) -> Decimal:
+        amount = Decimal(amount)
         return Decimal("25.00")
 
 

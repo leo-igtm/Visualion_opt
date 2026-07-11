@@ -4,8 +4,7 @@ Garantiza que una clase tenga solo una instancia
 """
 
 from threading import Lock 
-from typing import Dict
-
+from typing import Any, Dict
 
 class SingletonMeta(type):
     """
@@ -16,14 +15,15 @@ class SingletonMeta(type):
     _instances : Dict[type,object]={}
     _lock: Lock = Lock()
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args: Any, **kwargs: Any):
         with cls._lock:
-            if cls not in cls._instances:
+            instance = cls._instances.get(cls)
+            if instance is None:
                 instance = super().__call__(*args, **kwargs)
                 cls._instances[cls] = instance
-        return cls._instances[cls]  
+        return cls._instances[cls]
     
-
+    
    
 
 class Singleton(metaclass=SingletonMeta):
@@ -31,16 +31,16 @@ class Singleton(metaclass=SingletonMeta):
     Clase base que cualquier otra clase puede heredar para convertirse en un Singleton.
     Al heredar de esta, automáticamente utilizará SingletonMeta para su creación.
     """
-
-
-    pass
-
-if __name__ == "__main__":
-    # Ejemplo de uso del patrón Singleton
-    class MySingleton(Singleton):
-        def __init__(self, value):
-            self.value = value
-
-    singleton1 = MySingleton(10)
-
-    print(singleton1.value)  # Salida: 10
+    def some_business_logic(self):
+        """
+        Método de ejemplo que puede ser sobrescrito por subclases.
+        Representa la lógica de negocio que un Singleton podría tener.
+        """
+        pass
+    def __init__(self):
+        """
+        Inicializa la instancia del Singleton.
+        Se puede sobrescribir en las subclases, pero se recomienda llamar a super().__init__() para asegurar
+        que la inicialización de la metaclase se realice correctamente.
+        """
+        pass
