@@ -35,6 +35,7 @@ class CashPaymentStrategy(PaymentStrategy):
     """Pago en efectivo."""
 
     def validate(self, payment_data: Mapping[str, object]) -> bool:
+        payment_data.get("amount")  # Solo se requiere la cantidad para efectivo
         return True
 
     def process(self, amount: Decimal) -> dict[str, str]:
@@ -47,6 +48,7 @@ class CashPaymentStrategy(PaymentStrategy):
         }
 
     def get_fee(self, amount: Decimal) -> Decimal:
+        amount = Decimal(amount)
         return Decimal("0.00")
 
 
@@ -107,6 +109,7 @@ class TransferPaymentStrategy(PaymentStrategy):
         }
 
     def get_fee(self, amount: Decimal) -> Decimal:
+        amount = Decimal(amount)
         return Decimal("50.00")
 
 

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from Backend.services.oauth_service import GoogleOAuthService, GitHubOAuthService
+from ..services.oauth_service import GoogleOAuthService, GitHubOAuthService
 
 class TestOAuthServices(unittest.TestCase):
     

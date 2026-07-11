@@ -16,9 +16,12 @@ class ComponenteOrden(ABC):
         self._padre = padre
 
     def agregar(self, componente: ComponenteOrden) -> None:
+        componente.padre = self
+
         pass
 
     def quitar(self, componente: ComponenteOrden) -> None:
+        componente.padre = None
         pass
 
     def es_compuesto(self) -> bool:

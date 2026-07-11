@@ -3,11 +3,9 @@ Singleton Pattern Implementation
 Garantiza que una clase tenga solo una instancia
 """
 
-from typing import  TypeVar
-import threading
+from threading import Lock 
+from typing import Dict
 
-T = TypeVar('T')
-W
 
 class SingletonMeta(type):
     """
@@ -15,28 +13,34 @@ class SingletonMeta(type):
     Utiliza un mecanismo de bloqueo para evitar "race conditions" cuando
     múltiples hilos intentan crear una instancia simultáneamente.
     """
-    # Diccionario para almacenar la única instancia de cada clase Singleton.
-    _instances: dict[type, object] = {}
-    
-    # Objeto de bloqueo para sincronizar hilos.
-    _lock: threading.Lock = threading.Lock()
+    _instances : Dict[type,object]={}
+    _lock: Lock = Lock()
 
-    def __call__(cls: type[T], *args, **kwargs) -> T:
-        # Cuando se intenta crear un objeto (ej: MiClase()), Python llama a este método.
-        # Adquirimos el bloqueo para asegurar que solo un hilo pueda ejecutar este bloque a la vez.
-        with cls._lock():
-            # Si la clase aún no tiene una instancia creada...
+    def __call__(cls, *args, **kwargs):
+        with cls._lock:
             if cls not in cls._instances:
-                # ...creamos una nueva instancia llamando al __call__ de la clase padre (type).
                 instance = super().__call__(*args, **kwargs)
-                # ...y la guardamos en nuestro diccionario.
                 cls._instances[cls] = instance
-        # Devolvemos la instancia (ya sea la recién creada o la que ya existía).
-        return cls._instances[cls]
+        return cls._instances[cls]  
+    
+
+   
 
 class Singleton(metaclass=SingletonMeta):
     """
     Clase base que cualquier otra clase puede heredar para convertirse en un Singleton.
     Al heredar de esta, automáticamente utilizará SingletonMeta para su creación.
     """
+
+
     pass
+
+if __name__ == "__main__":
+    # Ejemplo de uso del patrón Singleton
+    class MySingleton(Singleton):
+        def __init__(self, value):
+            self.value = value
+
+    singleton1 = MySingleton(10)
+
+    print(singleton1.value)  # Salida: 10

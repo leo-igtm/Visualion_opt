@@ -2,10 +2,10 @@ import unittest
 from decimal import Decimal
 
 # Import patterns to test
-from Backend.patterns.singleton import Singleton
-from Backend.patterns.strategy import CashPaymentStrategy, CreditCardPaymentStrategy, PaymentStrategyFactory
+from ..patterns.singleton import Singleton
+from ..patterns.strategy import CashPaymentStrategy, CreditCardPaymentStrategy, PaymentStrategyFactory
 
-from Backend.constants import AuthConstants
+from ..constants import AuthConstants
 
 class TestSingleton(unittest.TestCase):
     def test_singleton_instance(self):
